@@ -211,7 +211,7 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
       <div id="t-kpis" class="kpis"></div>
       <div class="card"><h3>🛍 Tienda online (Shopify) · por día</h3><div id="t-shopify"></div></div>
       <div class="grid2">
-        <div class="card"><h3>📷 Instagram · Facebook</h3><div id="t-redes" class="mini">Todavía no hay datos. Falta conectar la cuenta profesional de Instagram y la página de Facebook (Meta Business Suite).</div></div>
+        <div class="card"><h3>📷 Instagram · Facebook</h3><div id="t-redes" class="mini">Sin datos todavía.</div></div>
         <div class="card"><h3>📣 Pauta (Meta Ads · Google Ads)</h3><div id="t-pauta" class="mini">Todavía no hay datos. Cuando haya campañas, acá se ve gasto, clicks y costo por venta.</div></div>
       </div>
     </section>
@@ -408,6 +408,28 @@ function renderTablero() {
     + `</table>`;
   if (!serie.some(x => x.s || x.p)) h = '<div class="empty">Sin datos de Shopify para este período.</div>';
   document.getElementById('t-shopify').innerHTML = h;
+  renderRedes(r, d1, d2, p1, p2);
+}
+// (v3) Instagram / Facebook por cuenta (dimension = atelier, oficial…). Seguidores = último valor; alcance/interacciones = suma del período.
+function renderRedes(r, d1, d2, p1, p2) {
+  const cuentas = [...new Set(MET.filter(m => m.fuente === 'instagram' || m.fuente === 'facebook').map(m => m.dimension).filter(Boolean))];
+  if (!cuentas.length) { document.getElementById('t-redes').innerHTML = '<div class="mini">Sin datos todavía.</div>'; return; }
+  const ult = (f, c, m) => { const x = MET.filter(q => q.fuente === f && q.dimension === c && q.metrica === m); return x.length ? Number(x[x.length - 1].valor) : null; };
+  const sum = (f, c, m, a, b) => MET.filter(q => q.fuente === f && q.dimension === c && q.metrica === m && q.fecha >= a && q.fecha <= b).reduce((t, q) => t + Number(q.valor), 0);
+  const NOM = { atelier: 'Atelier', oficial: 'Claudia Adorno (oficial)' };
+  let h = '';
+  for (const c of cuentas) {
+    const segIG = ult('instagram', c, 'seguidores'), segFB = ult('facebook', c, 'seguidores');
+    const alc = sum('instagram', c, 'alcance', d1, d2), alcP = sum('instagram', c, 'alcance', p1, p2);
+    const inter = sum('instagram', c, 'interacciones', d1, d2) + sum('facebook', c, 'interacciones', d1, d2);
+    const interP = sum('instagram', c, 'interacciones', p1, p2) + sum('facebook', c, 'interacciones', p1, p2);
+    const vis = sum('instagram', c, 'visitas_perfil', d1, d2), clk = sum('instagram', c, 'clicks_web', d1, d2);
+    h += `<div style="font-weight:700;margin:6px 0 4px">${esc(NOM[c] || c)}</div><div class="kpis" style="margin:0 0 8px">`
+      + `<div class="kpi"><div class="l">Seguidores IG</div><div class="n">${segIG === null ? '—' : segIG.toLocaleString('es-AR')}</div><div class="d">FB: ${segFB === null ? '—' : segFB.toLocaleString('es-AR')}</div></div>`
+      + _kpi('Alcance IG', alc, alcP) + _kpi('Interacciones', inter, interP)
+      + `<div class="kpi"><div class="l">Visitas al perfil</div><div class="n">${vis.toLocaleString('es-AR')}</div><div class="d">${clk} clicks al link</div></div></div>`;
+  }
+  document.getElementById('t-redes').innerHTML = h;
 }
 
 // ── Contenido ──
