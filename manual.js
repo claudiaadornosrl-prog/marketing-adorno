@@ -82,9 +82,10 @@ function abrirManual() {
 // Botón 📖 en el header (autoinyectable)
 (function () {
   function poner() {
-    const h = document.querySelector('header'); if (!h || document.getElementById('btn-manual')) return;
-    const b = document.createElement('button'); b.id = 'btn-manual'; b.className = 'logout'; b.title = 'Manual de uso'; b.textContent = '📖';
-    b.onclick = abrirManual; h.insertBefore(b, h.querySelector('.logout'));
+    const hr = document.querySelector('header .header-right'); if (!hr || document.getElementById('btn-manual')) return;
+    const b = document.createElement('button'); b.id = 'btn-manual'; b.className = 'hbtn'; b.title = 'Manual de uso'; b.setAttribute('aria-label', 'Manual');
+    b.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span class="lb">Manual</span>';
+    b.onclick = abrirManual; hr.insertBefore(b, hr.querySelector('.hsep'));
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', poner); else poner();
 })();
