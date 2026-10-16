@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>
+// ═══ SESIÓN COMPARTIDA ENTRE MÓDULOS · SSO Adorno (10-sep-2026) ═══
+// Todos los módulos viven en el mismo origen (claudiaadornosrl-prog.github.io),
+// así que pueden compartir la sesión: se guarda bajo la clave 'adorno-auth' en
+// vez de una por módulo. Que un módulo te deje pasar SIN escribir la clave
+// depende de dos marcas, y alcanza con una:
+//   · dispositivo confiable → se tilda UNA vez en el Hub ("Confiar en esta
+//     computadora"). Vale para todos los módulos de ese equipo. Pensado para
+//     la PC de JP; en los locales, que son compartidos, nadie la tilda.
+//   · módulo recordado → ya te habías logueado en ESE módulo con ese mismo
+//     usuario. Conserva el comportamiento de siempre para las vendedoras.
+// Sin ninguna de las dos, el módulo pide usuario y contraseña como antes.
+window.ADORNO_SSO = (function () {
+  var KEY = 'adorno-auth', DEV = 'adorno-equipo-confiable', MOD = 'adorno-modulo-';
+  function get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  return {
+    KEY: KEY,
+    // Al estrenar la clave compartida, adopta la sesión que este módulo ya
+    // tenía guardada con su clave vieja: nadie se queda afuera por el cambio.
+    migrar: function (keyVieja, modulo) {
+      if (!keyVieja) return;
+      var v = get(keyVieja);
+      if (!v) return;
+      // La sesión se copia una sola vez; la marca del módulo se pone siempre
+      // que este módulo tuviera sesión propia — Documentos y Compras
+      // compartían la clave por defecto y si no, al segundo le pediría login.
+      if (!get(KEY)) set(KEY, v);
+      var mail = '1';
+      try { mail = (JSON.parse(v).user || {}).email || '1'; } catch (e) {}
+      set(MOD + modulo, String(mail).toLowerCase());
+    },
+    confiable: function () { return get(DEV) === '1'; },
+    confiar: function (si) { si ? set(DEV, '1') : del(DEV); },
+    recordar: function (modulo, email) { set(MOD + modulo, String(email || '1').toLowerCase()); },
+    entraDirecto: function (modulo, email) {
+      if (this.confiable()) return true;
+      var m = get(MOD + modulo);
+      return !!m && (m === '1' || m === String(email || '').toLowerCase());
+    },
+    // Al cerrar sesión se olvidan los módulos, pero NO que el equipo es de
+    // confianza: eso es una propiedad de la computadora, no de la sesión.
+    olvidarModulos: function () {
+      try {
+        Object.keys(localStorage).filter(function (k) { return k.indexOf(MOD) === 0; }).forEach(del);
+      } catch (e) {}
+    }
+  };
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#be185d">
+<title>📣 Marketing · Claudia Adorno</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192-v2.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📣%3C/text%3E%3C/svg%3E">
+<style>
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+.kpi { background: white; border-radius: 10px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.kpi .n { font-size: 24px; font-weight: 700; color: var(--primary); }
+.kpi .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.kpi .d { font-size: 12px; margin-top: 2px; } .kpi .d.up { color: var(--green); } .kpi .d.down { color: var(--red); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+.card h3 { margin: 0 0 8px; font-size: 14px; }
+.barras { display: flex; align-items: flex-end; gap: 2px; height: 70px; margin: 8px 0 4px; }
+.barras div { flex: 1; background: var(--primary-bg); border-top: 2px solid var(--primary); min-height: 2px; position: relative; }
+.barras div:hover::after { content: attr(title); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--text); color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px; white-space: nowrap; z-index: 5; }
+.fila { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; background: white; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.fila .cuerpo { flex: 1; min-width: 0; } .fila .t { font-weight: 600; } .fila .s { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: pre-wrap; }
+.fila .acc { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.prio { width: 8px; border-radius: 4px; align-self: stretch; flex: none; } .prio.p1 { background: var(--red); } .prio.p2 { background: var(--amber); } .prio.p3 { background: #94a3b8; }
+.fila.hecha { opacity: .55; } .fila.hecha .t { text-decoration: line-through; }
+.overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 500; align-items: center; justify-content: center; padding: 16px; }
+.overlay.open { display: flex; }
+.box { background: white; border-radius: 12px; width: 100%; max-width: 640px; max-height: 92vh; overflow: auto; }
+.box-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.box .form { padding: 14px 16px; } .box-pie { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
+textarea { font-family: inherit; font-size: 14px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; width: 100%; box-sizing: border-box; }
+.chip { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+</style>
+<style>
+@font-face { font-family: 'URW Gothic'; src: url('fonts/URWGothic-Book.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
+:root { --primary: #be185d; --primary-dark: #9d174d; --primary-bg: #fdf2f8; --green:#16a34a; --green-bg:#dcfce7; --amber:#d97706; --amber-bg:#fef3c7;
+        --red:#dc2626; --red-bg:#fee2e2; --gray:#64748b; --gray-light:#f1f5f9; --border:#e2e8f0; --text:#0f172a; --muted:#64748b; }
+* { box-sizing: border-box; }
+body { font-family: 'URW Gothic', -apple-system, "Segoe UI", Roboto, sans-serif; margin: 0; background: #f8fafc; color: var(--text); }
+#login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); }
+.login-card { background: white; border-radius: 16px; padding: 32px 28px; max-width: 400px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.login-card h1 { margin: 0 0 4px; font-size: 24px; color: var(--primary); text-align: center; }
+.login-card .sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.login-card label { font-size: 12px; font-weight: 600; color: var(--muted); display: block; margin: 12px 0 6px; text-transform: uppercase; letter-spacing: .04em; }
+.login-card input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; }
+.login-card button { width: 100%; margin-top: 18px; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.login-card button:disabled { opacity: .5; }
+#login-error { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 18px; }
+#app { display: none; }
+header { background: white; border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+header h1 { margin: 0; font-size: 18px; color: var(--primary); }
+header .spacer { flex: 1; } header .user-info { font-size: 13px; color: var(--muted); }
+header button.logout, .btn { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
+.btn.danger { color: var(--red); border-color: var(--red); }
+nav.tabs { display: flex; gap: 4px; padding: 8px 20px; background: white; border-bottom: 1px solid var(--border); overflow-x: auto; }
+nav.tabs button { background: transparent; border: none; padding: 10px 16px; font-size: 14px; cursor: pointer; color: var(--muted); border-radius: 8px 8px 0 0; white-space: nowrap; font-family: inherit; }
+nav.tabs button.active { background: var(--primary-bg); color: var(--primary); font-weight: 600; }
+main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.filters { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.filters label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.filters select, .filters input, .form select, .form input, .form textarea { border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 14px; background: white; font-family: inherit; }
+.filters .stat { margin-left: auto; font-size: 13px; color: var(--muted); }
+.tab-content { display: none; } .tab-content.active { display: block; }
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+th, td { padding: 9px 12px; text-align: left; font-size: 14px; border-bottom: 1px solid var(--border); }
+th { background: var(--gray-light); font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.nivel1 td { background: var(--primary-bg); font-weight: 700; } tr.nivel2 td { background: #f8fafc; font-weight: 600; }
+tr.dim { color: var(--muted); }
+.chip { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.chip.green { background: var(--green-bg); color: var(--green); } .chip.amber { background: var(--amber-bg); color: var(--amber); }
+.chip.red { background: var(--red-bg); color: var(--red); } .chip.gray { background: var(--gray-light); color: var(--muted); }
+.empty { padding: 50px 20px; text-align: center; color: var(--muted); background: white; border-radius: 10px; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: white; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.2); z-index: 1000; }
+.toast.error { background: var(--red); } .toast.success { background: var(--green); }
+.card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; }
+.card h3 { margin: 0 0 8px; font-size: 15px; }
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; align-items: end; }
+.form label { font-size: 12px; color: var(--muted); font-weight: 600; display: flex; flex-direction: column; gap: 4px; }
+.mini { font-size: 12px; color: var(--muted); }
+.prueba { background: #fef3c7; color: #92400e; text-align: center; padding: 4px; font-size: 12px; font-weight: 600; }
+#ov { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 16px; }
+#ov .box { background: white; border-radius: 12px; padding: 18px; max-width: 720px; width: 100%; max-height: 90vh; overflow: auto; }
+@media (max-width: 600px) { main { padding: 10px; } th, td { padding: 8px 8px; font-size: 13px; } header h1 { font-size: 16px; } }
+</style>
+</head>
+<body>
+<div id="login">
+  <div class="login-card">
+    <h1>📣 Marketing</h1>
+    <div class="sub">Redes · pauta · web · métricas del atelier y los locales<br>Claudia Adorno SRL</div>
+    <label>Email</label>
+    <input type="email" id="email" placeholder="tu_email@ejemplo.com" autocomplete="username">
+    <label>Contraseña</label>
+    <input type="password" id="pass" placeholder="••••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') doLogin()">
+    <button onclick="doLogin()" id="btn-login">Entrar</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+<div id="app">
+  <div id="franja-prueba" class="prueba" style="display:none">🧪 MODO PRUEBA · solo se ven los comprobantes de test</div>
+  <header>
+    <a href="https://claudiaadornosrl-prog.github.io/hub/" title="Volver al Hub" style="text-decoration:none;font-size:17px;line-height:1;color:inherit;opacity:.65;padding:4px 8px;border-radius:8px;">↩</a>
+    <h1>📣 Marketing · Claudia Adorno</h1>
+    <div class="spacer"></div>
+    <div class="user-info" id="user-info"></div>
+    <button class="logout" onclick="doLogout()">Salir</button>
+  </header>
+  <nav class="tabs" id="tabs">
+    <button id="tab-tablero" class="active" onclick="switchTab('tablero')">📊 Tablero</button>
+    <button id="tab-contenido" class="" onclick="switchTab('contenido')">📷 Contenido</button>
+    <button id="tab-web" class="" onclick="switchTab('web')">🛠 Tareas</button>
+    <button id="tab-pauta" class="" onclick="switchTab('pauta')">📣 Pauta</button>
+  </nav>
+  <main>
+
+    <section id="content-tablero" class="tab-content active">
+      <div class="filters">
+        <label>Período</label>
+        <select id="t-rango" onchange="renderTablero()"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 90 días</option></select>
+        <button class="btn" onclick="cargarMetricas().then(renderTablero)">🔄</button>
+        <div class="stat" id="t-stat"></div>
+      </div>
+      <div id="t-kpis" class="kpis"></div>
+      <div class="card"><h3>🛍 Tienda online (Shopify) · por día</h3><div id="t-shopify"></div></div>
+      <div class="grid2">
+        <div class="card"><h3>📷 Instagram · Facebook</h3><div id="t-redes" class="mini">Todavía no hay datos. Falta conectar la cuenta profesional de Instagram y la página de Facebook (Meta Business Suite).</div></div>
+        <div class="card"><h3>📣 Pauta (Meta Ads · Google Ads)</h3><div id="t-pauta" class="mini">Todavía no hay datos. Cuando haya campañas, acá se ve gasto, clicks y costo por venta.</div></div>
+      </div>
+    </section>
+    <section id="content-contenido" class="tab-content">
+      <div class="filters">
+        <label>Estado</label>
+        <select id="c-estado" onchange="renderContenido()"><option value="">Todos</option><option value="idea">Ideas</option><option value="borrador">Borradores</option><option value="aprobada">Aprobadas</option><option value="publicada">Publicadas</option><option value="descartada">Descartadas</option></select>
+        <button class="btn primary" onclick="nuevoContenido()">➕ Nueva publicación</button>
+        <div class="stat" id="c-stat"></div>
+      </div>
+      <div id="c-lista"></div>
+    </section>
+    <section id="content-web" class="tab-content">
+      <div class="filters">
+        <label>Área</label>
+        <select id="w-area" onchange="renderTareas()"><option value="">Todas</option><option value="web">Web</option><option value="redes">Redes</option><option value="pauta">Pauta</option></select>
+        <label><input type="checkbox" id="w-hechas" onchange="renderTareas()"> ver hechas</label>
+        <button class="btn primary" onclick="nuevaTarea()">➕ Tarea</button>
+        <div class="stat" id="w-stat"></div>
+      </div>
+      <div id="w-lista"></div>
+    </section>
+    <section id="content-pauta" class="tab-content">
+      <div class="card">
+        <h3>📣 Pauta · cómo va a funcionar</h3>
+        <div class="mini" style="line-height:1.6">
+          El módulo <b>propone y vos aprobás</b>: nunca gasta solo.<br>
+          1. Cada semana aparece acá qué publicación rindió mejor y conviene promocionar, y qué campaña está cara.<br>
+          2. Cada sugerencia tiene un botón "aplicar" que recién entonces toca la campaña.<br>
+          3. Para arrancar hacen falta: Meta Business Suite con Instagram profesional vinculado, cuenta de Google Ads y un presupuesto mensual.<br>
+          <b>Estado:</b> esperando esos accesos. Mientras tanto, lo importante es la tienda (ver pestaña Web) y el contenido.
+        </div>
+      </div>
+    </section>
+
+    <div id="c-overlay" class="overlay">
+      <div class="box">
+        <div class="box-head"><b id="c-titulo">Publicación</b><button class="btn" onclick="cerrarContenido()">✕</button></div>
+        <div class="form">
+          <label>Canal <select id="f-canal"><option value="ambos">Instagram + Facebook</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select></label>
+          <label>Tipo <select id="f-tipo"><option value="post">Post</option><option value="carrusel">Carrusel</option><option value="reel">Reel</option><option value="historia">Historia</option></select></label>
+          <label>Fecha prevista <input id="f-fecha" type="date"></label>
+          <label>Estado <select id="f-estado"><option value="idea">Idea</option><option value="borrador">Borrador</option><option value="aprobada">Aprobada</option><option value="publicada">Publicada</option><option value="descartada">Descartada</option></select></label>
+          <label style="grid-column:1/-1">Título (para nosotros) <input id="f-titulo" placeholder="Lanzamiento banco Chantik · teca"></label>
+          <label style="grid-column:1/-1">Texto de la publicación <textarea id="f-texto" rows="5" placeholder="Lo que se publica, con la voz del atelier"></textarea></label>
+          <label style="grid-column:1/-1">Hashtags <input id="f-hashtags" placeholder="#atelierclaudiaadorno #mobiliario #teca"></label>
+          <label>SKU / producto <input id="f-sku" placeholder="opcional"></label>
+          <label>Imagen (URL) <input id="f-imagen" placeholder="https://…"></label>
+          <label style="grid-column:1/-1">Notas <input id="f-notas"></label>
+        </div>
+        <div class="box-pie"><button class="btn" onclick="cerrarContenido()">Cancelar</button><button class="btn primary" onclick="guardarContenido()">Guardar</button></div>
+      </div>
+    </div>
+    <div id="w-overlay" class="overlay">
+      <div class="box">
+        <div class="box-head"><b>Tarea</b><button class="btn" onclick="cerrarTarea()">✕</button></div>
+        <div class="form">
+          <label>Área <select id="g-area"><option value="web">Web</option><option value="redes">Redes</option><option value="pauta">Pauta</option></select></label>
+          <label>Prioridad <select id="g-prio"><option value="1">Alta</option><option value="2" selected>Media</option><option value="3">Baja</option></select></label>
+          <label style="grid-column:1/-1">Título <input id="g-titulo"></label>
+          <label style="grid-column:1/-1">Detalle <textarea id="g-detalle" rows="3"></textarea></label>
+        </div>
+        <div class="box-pie"><button class="btn" onclick="cerrarTarea()">Cancelar</button><button class="btn primary" onclick="guardarTarea()">Guardar</button></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL  = 'https://kwwiykssrpabncpqtmwi.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3d2l5a3NzcnBhYm5jcHF0bXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNjI1NTQsImV4cCI6MjA5NDkzODU1NH0.O1VhKdjPahnJJ9qXcQuSKQbnKGhsEZqYmjDEfRuRpkc';
+const MODULO = 'marketing';
+ADORNO_SSO.migrar('sb-kwwiykssrpabncpqtmwi-auth-token', MODULO);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: true, autoRefreshToken: true, storageKey: ADORNO_SSO.KEY } });
+(function (mod) {
+  var inOrig = sb.auth.signInWithPassword.bind(sb.auth);
+  sb.auth.signInWithPassword = async function (cred) { var r = await inOrig(cred); if (!r.error && r.data && r.data.user) ADORNO_SSO.recordar(mod, r.data.user.email); return r; };
+  var outOrig = sb.auth.signOut.bind(sb.auth);
+  sb.auth.signOut = async function () {
+    ADORNO_SSO.olvidarModulos();
+    // Salir cierra SOLO este equipo (scope local), no el usuario en todas las PCs.
+    window.__adornoSaliendo = true;
+    return outOrig(arguments[0] || { scope: 'local' });
+  };
+  // Si la sesión se cae sola, avisar y volver al login.
+  var _tuvoSesion = false;
+  sb.auth.onAuthStateChange(function (ev, s) {
+    if (s) { _tuvoSesion = true; return; }
+    if (ev === 'SIGNED_OUT' && _tuvoSesion && !window.__adornoSaliendo) {
+      _tuvoSesion = false;
+      alert('Tu sesión se cerró (venció o alguien salió con este usuario).\nVolvé a ingresar: lo que no guardaste hay que cargarlo de nuevo.');
+      location.reload();
+    }
+  });
+})(MODULO);
+
+// 🧪 AMBIENTE DE PRUEBA: mismo interruptor que Compras (constante). true = solo comprobantes de test.
+// Cuando Compras pase a definitivo, pasar acá también a false.
+const MODO_PRUEBA = false;
+let session = null;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const plata = n => (n == null || isNaN(n)) ? '—' : '$ ' + Number(n).toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+const plata2 = n => (n == null || isNaN(n)) ? '—' : '$ ' + Number(n).toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function hoyAR() { const p = new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Argentina/Buenos_Aires', year:'numeric', month:'2-digit', day:'2-digit'}).format(new Date()); return p; }
+function toast(msg, tipo) { const t = document.createElement('div'); t.className = 'toast ' + (tipo || ''); t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3200); }
+function switchTab(k) {
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.id === 'tab-' + k));
+  document.querySelectorAll('.tab-content').forEach(s => s.classList.toggle('active', s.id === 'content-' + k));
+  if (typeof onTab === 'function') onTab(k);
+}
+async function doLogin() {
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const pass  = document.getElementById('pass').value;
+  const errEl = document.getElementById('login-error'); errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'Email y contraseña obligatorios'; return; }
+  document.getElementById('btn-login').disabled = true;
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    await entrar(data.user);
+  } catch (e) { errEl.textContent = 'Error: ' + (e.message || 'desconocido'); }
+  finally { document.getElementById('btn-login').disabled = false; }
+}
+async function entrar(user) {
+  const { data: ok } = await sb.rpc('marketing_es_usuario');
+  if (!ok) { /* sin signOut: sesión compartida (SSO) */ document.getElementById('login-error').textContent = 'Tu usuario no tiene acceso a este módulo.'; return; }
+  session = { email: user.email, user };
+  document.getElementById('user-info').textContent = user.email;
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('franja-prueba').style.display = MODO_PRUEBA ? 'block' : 'none';
+  await init();
+}
+async function doLogout() { await sb.auth.signOut(); location.reload(); }
+(async () => {
+  const { data: { session: s } } = await sb.auth.getSession();
+  if (s && ADORNO_SSO.entraDirecto(MODULO, s.user?.email)) await entrar(s.user);
+})();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+
+
+// ══════════════════════════════════════════════════════════════════
+//  Marketing digital · v1 (16-oct-2026, JP)
+//  Tablero (métricas de Shopify hoy; redes y pauta cuando haya accesos),
+//  calendario de contenido, tareas de la web, pauta (propone / vos aprobás).
+// ══════════════════════════════════════════════════════════════════
+let MET = [], CONT = [], TAR = [];
+const NOMBRE_MET = { sesiones: 'Sesiones', visitantes: 'Visitantes', carrito: 'Agregaron al carrito', checkout: 'Llegaron al checkout', pedidos: 'Pedidos', ventas_netas: 'Ventas netas',
+  productos_activos: 'Productos activos', productos_sin_precio: 'Activos sin precio', productos_borrador: 'En borrador' };
+const ESTADO_CHIP = { idea: 'gray', borrador: 'amber', aprobada: 'green', publicada: 'green', descartada: 'red' };
+
+async function init() {
+  document.getElementById('franja-prueba').style.display = 'none';
+  await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas()]);
+  renderTablero(); renderContenido(); renderTareas();
+}
+function onTab(k) { if (k === 'tablero') renderTablero(); if (k === 'contenido') renderContenido(); if (k === 'web') renderTareas(); }
+
+// ── Tablero ──
+async function cargarMetricas() {
+  const desde = new Date(Date.now() - 200 * 864e5).toISOString().slice(0, 10);
+  const { data, error } = await sb.from('marketing_metricas').select('fuente, fecha, metrica, valor, dimension').gte('fecha', desde).order('fecha');
+  if (error) { toast('Error métricas: ' + error.message, 'error'); return; }
+  MET = data || [];
+}
+function _suma(fuente, metrica, d1, d2) { return MET.filter(m => m.fuente === fuente && m.metrica === metrica && !m.dimension && m.fecha >= d1 && m.fecha <= d2).reduce((a, m) => a + Number(m.valor), 0); }
+function _dia(n) { return new Date(Date.now() - n * 864e5).toISOString().slice(0, 10); }
+function _kpi(l, n, prev, plataFmt) {
+  const d = prev ? Math.round((n - prev) / prev * 100) : null;
+  return `<div class="kpi"><div class="l">${esc(l)}</div><div class="n">${plataFmt ? plata(n) : n.toLocaleString('es-AR')}</div>
+    <div class="d ${d === null ? '' : d >= 0 ? 'up' : 'down'}">${d === null ? (prev === 0 && n > 0 ? 'nuevo' : 'sin período anterior') : (d >= 0 ? '▲ ' : '▼ ') + Math.abs(d) + '% vs. período anterior'}</div></div>`;
+}
+function renderTablero() {
+  const r = Number(document.getElementById('t-rango').value);
+  const d1 = _dia(r - 1), d2 = _dia(0), p1 = _dia(2 * r - 1), p2 = _dia(r);
+  const k = m => [_suma('shopify', m, d1, d2), _suma('shopify', m, p1, p2)];
+  const [ses, sesP] = k('sesiones'), [ped, pedP] = k('pedidos'), [ven, venP] = k('ventas_netas'), [car, carP] = k('carrito');
+  const ultCat = m => { const x = MET.filter(q => q.fuente === 'shopify' && q.metrica === m); return x.length ? Number(x[x.length - 1].valor) : null; };
+  document.getElementById('t-kpis').innerHTML = _kpi('Sesiones en la tienda', ses, sesP) + _kpi('Agregaron al carrito', car, carP) + _kpi('Pedidos', ped, pedP) + _kpi('Ventas netas', ven, venP, true)
+    + (ultCat('productos_sin_precio') !== null ? `<div class="kpi"><div class="l">Activos sin precio</div><div class="n" style="color:var(--red)">${ultCat('productos_sin_precio')}</div><div class="d">de ${ultCat('productos_activos')} productos activos</div></div>` : '');
+  const ultima = MET.filter(m => m.fuente === 'shopify').map(m => m.fecha).sort().pop();
+  document.getElementById('t-stat').textContent = ultima ? `Shopify actualizado al ${ultima.split('-').reverse().join('/')}` : 'Sin datos todavía';
+  // barras por día (sesiones) + tabla
+  const dias = []; for (let i = r - 1; i >= 0; i--) dias.push(_dia(i));
+  const serie = dias.map(f => ({ f, s: _suma('shopify', 'sesiones', f, f), c: _suma('shopify', 'carrito', f, f), p: _suma('shopify', 'pedidos', f, f), v: _suma('shopify', 'ventas_netas', f, f) }));
+  const max = Math.max(1, ...serie.map(x => x.s));
+  let h = `<div class="mini">Sesiones por día</div><div class="barras">${serie.map(x => `<div style="height:${Math.round(x.s / max * 100)}%" title="${x.f.split('-').reverse().slice(0,2).join('/')}: ${x.s} sesiones"></div>`).join('')}</div>`;
+  h += `<table><tr><th>Día</th><th class="num">Sesiones</th><th class="num">Carrito</th><th class="num">Pedidos</th><th class="num">Ventas</th></tr>`
+    + serie.slice().reverse().filter(x => x.s || x.p).slice(0, 31).map(x => `<tr><td>${x.f.split('-').reverse().join('/')}</td><td class="num">${x.s}</td><td class="num">${x.c || ''}</td><td class="num">${x.p || ''}</td><td class="num">${x.v ? plata(x.v) : ''}</td></tr>`).join('')
+    + `</table>`;
+  if (!serie.some(x => x.s || x.p)) h = '<div class="empty">Sin datos de Shopify para este período.</div>';
+  document.getElementById('t-shopify').innerHTML = h;
+}
+
+// ── Contenido ──
+async function cargarContenido() {
+  const { data, error } = await sb.from('marketing_contenido').select('*').order('fecha_prevista', { ascending: false, nullsFirst: false }).order('id', { ascending: false });
+  if (error) { toast('Error contenido: ' + error.message, 'error'); return; }
+  CONT = data || [];
+}
+function renderContenido() {
+  const est = document.getElementById('c-estado').value;
+  const l = CONT.filter(c => !est || c.estado === est);
+  document.getElementById('c-stat').textContent = `${l.length} publicación(es) · ${CONT.filter(c => c.estado === 'aprobada').length} aprobada(s) por publicar`;
+  document.getElementById('c-lista').innerHTML = l.length ? l.map(c => `<div class="fila">
+      ${c.imagen_url ? `<img src="${esc(c.imagen_url)}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;flex:none">` : ''}
+      <div class="cuerpo"><div class="t">${esc(c.titulo || '(sin título)')} <span class="chip ${ESTADO_CHIP[c.estado] || 'gray'}">${esc(c.estado)}</span> <span class="mini">· ${esc(c.canal)} · ${esc(c.tipo)}${c.fecha_prevista ? ' · ' + c.fecha_prevista.split('-').reverse().join('/') : ''}</span></div>
+      <div class="s">${esc(c.texto || '')}${c.hashtags ? '\n' + esc(c.hashtags) : ''}</div></div>
+      <div class="acc">
+        ${c.estado === 'borrador' || c.estado === 'idea' ? `<button class="btn primary" onclick="estadoContenido(${c.id}, 'aprobada')">✓ Aprobar</button>` : ''}
+        ${c.estado === 'aprobada' ? `<button class="btn primary" onclick="estadoContenido(${c.id}, 'publicada')">📤 Marcar publicada</button>` : ''}
+        <button class="btn" onclick="editarContenido(${c.id})">✏</button>
+        ${c.estado !== 'descartada' && c.estado !== 'publicada' ? `<button class="btn danger" onclick="estadoContenido(${c.id}, 'descartada')">✕</button>` : ''}
+      </div></div>`).join('')
+    : '<div class="empty">Todavía no hay publicaciones. Con "➕ Nueva publicación" cargás una idea; Claude también deja propuestas acá para que las apruebes.</div>';
+}
+let C_EDIT = null;
+function nuevoContenido() { C_EDIT = null; ['f-titulo','f-texto','f-hashtags','f-sku','f-imagen','f-notas'].forEach(i => document.getElementById(i).value = ''); document.getElementById('f-estado').value = 'idea'; document.getElementById('f-fecha').value = ''; document.getElementById('c-titulo').textContent = 'Nueva publicación'; document.getElementById('c-overlay').classList.add('open'); }
+function editarContenido(id) { const c = CONT.find(x => x.id === id); if (!c) return; C_EDIT = id;
+  document.getElementById('f-canal').value = c.canal; document.getElementById('f-tipo').value = c.tipo; document.getElementById('f-fecha').value = c.fecha_prevista || ''; document.getElementById('f-estado').value = c.estado;
+  document.getElementById('f-titulo').value = c.titulo || ''; document.getElementById('f-texto').value = c.texto || ''; document.getElementById('f-hashtags').value = c.hashtags || ''; document.getElementById('f-sku').value = c.sku || ''; document.getElementById('f-imagen').value = c.imagen_url || ''; document.getElementById('f-notas').value = c.notas || '';
+  document.getElementById('c-titulo').textContent = 'Editar publicación'; document.getElementById('c-overlay').classList.add('open'); }
+function cerrarContenido() { document.getElementById('c-overlay').classList.remove('open'); }
+async function guardarContenido() {
+  const row = { canal: document.getElementById('f-canal').value, tipo: document.getElementById('f-tipo').value, fecha_prevista: document.getElementById('f-fecha').value || null, estado: document.getElementById('f-estado').value,
+    titulo: document.getElementById('f-titulo').value.trim() || null, texto: document.getElementById('f-texto').value.trim() || null, hashtags: document.getElementById('f-hashtags').value.trim() || null,
+    sku: document.getElementById('f-sku').value.trim() || null, imagen_url: document.getElementById('f-imagen').value.trim() || null, notas: document.getElementById('f-notas').value.trim() || null, updated_at: new Date().toISOString() };
+  if (!row.titulo && !row.texto) { toast('Poné al menos un título o el texto', 'error'); return; }
+  const q = C_EDIT ? sb.from('marketing_contenido').update(row).eq('id', C_EDIT) : sb.from('marketing_contenido').insert({ ...row, creado_por: session.email });
+  const { error } = await q; if (error) { toast('Error: ' + error.message, 'error'); return; }
+  cerrarContenido(); toast('✓ Guardado'); await cargarContenido(); renderContenido();
+}
+async function estadoContenido(id, estado) {
+  const upd = { estado, updated_at: new Date().toISOString() };
+  if (estado === 'aprobada') { upd.aprobado_por = session.email; upd.aprobado_at = new Date().toISOString(); }
+  if (estado === 'publicada') upd.publicado_at = new Date().toISOString();
+  const { error } = await sb.from('marketing_contenido').update(upd).eq('id', id); if (error) { toast('Error: ' + error.message, 'error'); return; }
+  await cargarContenido(); renderContenido();
+}
+
+// ── Tareas (web / redes / pauta) ──
+async function cargarTareas() {
+  const { data, error } = await sb.from('marketing_tareas').select('*').order('estado').order('prioridad').order('id', { ascending: false });
+  if (error) { toast('Error tareas: ' + error.message, 'error'); return; }
+  TAR = data || [];
+}
+function renderTareas() {
+  const area = document.getElementById('w-area').value, verHechas = document.getElementById('w-hechas').checked;
+  const l = TAR.filter(t => (!area || t.area === area) && (verHechas || t.estado === 'pendiente'));
+  const pend = TAR.filter(t => t.estado === 'pendiente');
+  document.getElementById('w-stat').textContent = `${pend.length} pendiente(s) · ${pend.filter(t => t.prioridad === 1).length} de prioridad alta`;
+  document.getElementById('w-lista').innerHTML = l.length ? l.map(t => `<div class="fila ${t.estado !== 'pendiente' ? 'hecha' : ''}"><div class="prio p${t.prioridad}" title="${['','Alta','Media','Baja'][t.prioridad]}"></div>
+      <div class="cuerpo"><div class="t">${esc(t.titulo)} <span class="mini">· ${esc(t.area)} · ${esc(t.origen || '')}</span></div><div class="s">${esc(t.detalle || '')}</div></div>
+      <div class="acc">${t.estado === 'pendiente' ? `<button class="btn primary" onclick="estadoTarea(${t.id}, 'hecha')">✓ Hecha</button><button class="btn" onclick="estadoTarea(${t.id}, 'descartada')">Descartar</button>` : `<button class="btn" onclick="estadoTarea(${t.id}, 'pendiente')">Reabrir</button>`}</div></div>`).join('')
+    : '<div class="empty">Sin tareas pendientes.</div>';
+}
+function nuevaTarea() { document.getElementById('g-titulo').value = ''; document.getElementById('g-detalle').value = ''; document.getElementById('w-overlay').classList.add('open'); }
+function cerrarTarea() { document.getElementById('w-overlay').classList.remove('open'); }
+async function guardarTarea() {
+  const titulo = document.getElementById('g-titulo').value.trim(); if (!titulo) { toast('Falta el título', 'error'); return; }
+  const { error } = await sb.from('marketing_tareas').insert({ area: document.getElementById('g-area').value, prioridad: Number(document.getElementById('g-prio').value), titulo, detalle: document.getElementById('g-detalle').value.trim() || null, origen: 'manual' });
+  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  cerrarTarea(); toast('✓ Tarea creada'); await cargarTareas(); renderTareas();
+}
+async function estadoTarea(id, estado) {
+  const upd = { estado, hecha_por: estado === 'pendiente' ? null : session.email, hecha_at: estado === 'pendiente' ? null : new Date().toISOString() };
+  const { error } = await sb.from('marketing_tareas').update(upd).eq('id', id); if (error) { toast('Error: ' + error.message, 'error'); return; }
+  await cargarTareas(); renderTareas();
+}
+// Las subventanas se cierran SOLO con ✕ / Cancelar / Escape (regla JP): nunca clickeando afuera.
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
+
+</script>
+<script src="manual.js?v=1"></script>
+</body>
+</html>
