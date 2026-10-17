@@ -165,6 +165,16 @@ nav.tabs button.active { background: #fff; color: var(--primary-dark); opacity: 
   nav.tabs button.active { border-left-color: var(--primary); background: var(--primary-bg); color: var(--primary-dark); }
 }
 main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+nav.tabs button .count { background: #f59e0b; color: #fff; padding: 1px 7px; border-radius: 10px; font-size: 11px; margin-left: 5px; font-weight: 700; display: none; }
+nav.tabs button .count:not(:empty) { display: inline-block; }
+.msg { display: flex; gap: 10px; padding: 10px 12px; background: white; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.msg .red { width: 34px; height: 34px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 700; }
+.msg .red.ig { background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af); } .msg .red.fb { background: #1877f2; }
+.msg .cuerpo { flex: 1; min-width: 0; } .msg .quien { font-weight: 700; } .msg .meta { font-size: 11.5px; color: var(--muted); }
+.msg .txt { margin: 4px 0 6px; white-space: pre-wrap; } .msg .ctx { font-size: 11.5px; color: var(--muted); border-left: 3px solid var(--border); padding-left: 6px; margin-bottom: 6px; }
+.msg textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; min-height: 54px; }
+.msg .acc { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+.msg.viejo { border-left: 4px solid var(--amber); }
 #t-shopify tbody tr:nth-child(even) td, #t-shopify tr:nth-child(even) td { background: #fdf2f8; }
 </style>
 </head>
@@ -188,6 +198,7 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
     <span class="user-info" id="user-info"></span>
     <nav class="tabs" id="tabs">
       <button id="tab-tablero" class="active" onclick="switchTab('tablero')" title="Tablero"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span class="lb">Tablero</span></button>
+      <button id="tab-respuestas" onclick="switchTab('respuestas')" title="Respuestas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="lb">Respuestas</span><span class="count" id="cnt-respuestas"></span></button>
       <button id="tab-contenido" onclick="switchTab('contenido')" title="Contenido"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="lb">Contenido</span></button>
       <button id="tab-web" onclick="switchTab('web')" title="Tareas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="lb">Tareas</span></button>
       <button id="tab-pauta" onclick="switchTab('pauta')" title="Pauta"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg><span class="lb">Pauta</span></button>
@@ -233,6 +244,17 @@ main { padding: 20px; max-width: 1400px; margin: 0 auto; }
         <div class="stat" id="w-stat"></div>
       </div>
       <div id="w-lista"></div>
+    </section>
+    <section id="content-respuestas" class="tab-content">
+      <div class="filters">
+        <label>Cuenta</label><select id="m-cuenta" onchange="renderMensajes()"><option value="">Todas</option><option value="atelier">Atelier</option><option value="oficial">Claudia Adorno (oficial)</option></select>
+        <label>Red</label><select id="m-red" onchange="renderMensajes()"><option value="">IG + FB</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select>
+        <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option></select>
+        <button class="btn" onclick="cargarMensajes().then(renderMensajes)">🔄</button>
+        <div class="stat" id="m-stat"></div>
+      </div>
+      <div class="mini" style="margin:0 0 10px">El servidor trae mensajes y comentarios nuevos cada 10 minutos. Tocá <b>Enviar</b> y la respuesta sale en la próxima pasada (hasta 10 min). Nada se manda solo.</div>
+      <div id="m-lista"></div>
     </section>
     <section id="content-pauta" class="tab-content">
       <div class="card">
@@ -369,10 +391,11 @@ const ESTADO_CHIP = { idea: 'gray', borrador: 'amber', aprobada: 'green', public
 
 async function init() {
   document.getElementById('franja-prueba').style.display = 'none';
-  await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas()]);
-  renderTablero(); renderContenido(); renderTareas();
+  await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas(), cargarMensajes()]);
+  renderTablero(); renderContenido(); renderTareas(); renderMensajes();
+  setInterval(() => cargarMensajes().then(() => { if (document.getElementById('content-respuestas').classList.contains('active')) renderMensajes(); }), 120000);
 }
-function onTab(k) { if (k === 'tablero') renderTablero(); if (k === 'contenido') renderContenido(); if (k === 'web') renderTareas(); }
+function onTab(k) { if (k === 'tablero') renderTablero(); if (k === 'contenido') renderContenido(); if (k === 'web') renderTareas(); if (k === 'respuestas') renderMensajes(); }
 
 // ── Tablero ──
 async function cargarMetricas() {
@@ -430,6 +453,49 @@ function renderRedes(r, d1, d2, p1, p2) {
       + `<div class="kpi"><div class="l">Visitas al perfil</div><div class="n">${vis.toLocaleString('es-AR')}</div><div class="d">${clk} clicks al link</div></div></div>`;
   }
   document.getElementById('t-redes').innerHTML = h;
+}
+
+// ── Respuestas (bandeja IG/FB) ──
+let MSG = [];
+const NOM_CUENTA = { atelier: 'Atelier', oficial: 'Claudia Adorno' };
+async function cargarMensajes() {
+  const { data, error } = await sb.from('marketing_mensajes').select('*').order('fecha', { ascending: false }).limit(300);
+  if (error) { toast('Error mensajes: ' + error.message, 'error'); return; }
+  MSG = data || [];
+  const n = MSG.filter(m => m.estado === 'pendiente').length;
+  const c = document.getElementById('cnt-respuestas'); if (c) { c.textContent = n ? String(n) : ''; c.title = n ? `${n} sin responder` : ''; }
+}
+function _hace(f) { const h = (Date.now() - new Date(f)) / 36e5; return h < 1 ? `hace ${Math.round(h * 60)} min` : h < 48 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} días`; }
+function renderMensajes() {
+  const cu = document.getElementById('m-cuenta').value, red = document.getElementById('m-red').value, est = document.getElementById('m-estado').value;
+  const l = MSG.filter(m => (!cu || m.cuenta === cu) && (!red || m.plataforma === red) && m.estado === est);
+  const pend = MSG.filter(m => m.estado === 'pendiente');
+  document.getElementById('m-stat').textContent = `${pend.length} sin responder · ${pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5).length} con más de 2 h`;
+  document.getElementById('m-lista').innerHTML = l.length ? l.map(m => `<div class="msg ${m.estado === 'pendiente' && (Date.now() - new Date(m.fecha)) > 72e5 ? 'viejo' : ''}" id="msg-${m.id}">
+      <div class="red ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma}">${m.plataforma === 'instagram' ? 'IG' : 'FB'}</div>
+      <div class="cuerpo">
+        <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${esc(NOM_CUENTA[m.cuenta] || m.cuenta)} · ${_hace(m.fecha)}</span></div>
+        ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}</div>` : ''}
+        <div class="txt">${m.es_multimedia ? '<i>📎 imagen, sticker o audio (no se puede leer por acá; verlo en la app)</i>' : esc(m.texto || '')}</div>
+        ${m.estado === 'pendiente' ? `<textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
+          <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">Sale en la próxima pasada del servidor (≤10 min)</span></div>`
+        : m.estado === 'para_enviar' ? `<div class="mini">⏳ Por enviar: "${esc(m.respuesta || '')}"</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar envío</button></div>`
+        : m.estado === 'enviado' ? `<div class="mini">✓ Enviado ${m.enviado_at ? new Date(m.enviado_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} por ${esc((m.enviado_por || '').split('@')[0])}: "${esc(m.respuesta || '')}"</div>`
+        : m.estado === 'error' ? `<div class="mini" style="color:var(--red)">✗ No se pudo enviar: ${esc(m.error || '')}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Reintentar</button></div>`
+        : `<div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Volver a pendientes</button></div>`}
+      </div></div>`).join('')
+    : `<div class="empty">${est === 'pendiente' ? 'Nada sin responder. 🎉' : 'Nada acá.'}</div>`;
+}
+async function enviarMensaje(id) {
+  const t = (document.getElementById('resp-' + id)?.value || '').trim(); if (!t) { toast('Escribí la respuesta', 'error'); return; }
+  const { error } = await sb.from('marketing_mensajes').update({ respuesta: t, estado: 'para_enviar', enviado_por: session.email }).eq('id', id);
+  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  toast('✓ Queda para enviar'); await cargarMensajes(); renderMensajes();
+}
+async function estadoMensaje(id, estado) {
+  const { error } = await sb.from('marketing_mensajes').update({ estado }).eq('id', id);
+  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  await cargarMensajes(); renderMensajes();
 }
 
 // ── Contenido ──
@@ -511,6 +577,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
 
 </script>
-<script src="manual.js?v=2"></script>
+<script src="manual.js?v=3"></script>
 </body>
 </html>

@@ -29,6 +29,17 @@ function _manualSecciones() {
       ],
     },
     {
+      icon: '💬', titulo: 'Respuestas (mensajes y comentarios de IG y FB)',
+      desc: 'La bandeja de todo lo que escribieron en Instagram y Facebook, de las dos cuentas, y que nadie respondió.',
+      pasos: [
+        'El servidor trae mensajes privados y comentarios nuevos cada 10 minutos. Lo que ya respondió alguien desde la app no aparece.',
+        'Cada mensaje viene con una respuesta sugerida: la corregís si hace falta y tocás Enviar. Sale en la próxima pasada del servidor (hasta 10 minutos). Nada se manda solo.',
+        'Ignorar lo saca de la lista (stickers, saludos, spam). Se puede volver a pendientes desde el filtro "Ignorados".',
+        'Las imágenes, stickers y audios no se pueden leer por acá: se ven en la app de Instagram o Facebook.',
+        'Si algo lleva más de 2 horas sin responder, la fila se marca en ámbar y a JP le llega un aviso al celular. El número naranja de la pestaña es la cantidad sin responder.',
+      ],
+    },
+    {
       icon: '📷', titulo: 'Contenido (calendario de publicaciones)',
       desc: 'Cada publicación pasa por: idea → borrador → aprobada → publicada.',
       pasos: [
