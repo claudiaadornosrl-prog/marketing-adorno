@@ -32,6 +32,7 @@ function _manualSecciones() {
       icon: '💬', titulo: 'Respuestas (mensajes y comentarios de IG y FB)',
       desc: 'La bandeja de todo lo que escribieron en Instagram y Facebook, de las dos cuentas, y que nadie respondió.',
       pasos: [
+        'Arriba elegís la cuenta: Atelier o Claudia Adorno. Cada una tiene su propio contador naranja y su lista; nunca se mezclan.',
         'El servidor trae mensajes privados y comentarios nuevos cada 10 minutos. Lo que ya respondió alguien desde la app no aparece.',
         'Cada mensaje viene con una respuesta sugerida: la corregís si hace falta y tocás Enviar. Sale en la próxima pasada del servidor (hasta 10 minutos). Nada se manda solo.',
         'Ignorar lo saca de la lista (stickers, saludos, spam). Se puede volver a pendientes desde el filtro "Ignorados".',

@@ -175,6 +175,11 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .msg textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; min-height: 54px; }
 .msg .acc { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
 .msg.viejo { border-left: 4px solid var(--amber); }
+.subtabs { display: flex; gap: 4px; margin-right: 8px; }
+.subtabs button { border: 1px solid var(--border); background: white; border-radius: 8px; padding: 6px 12px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--muted); }
+.subtabs button.active { background: var(--primary); color: white; border-color: var(--primary); }
+.subtabs .count { background: #f59e0b; color: #fff; padding: 1px 7px; border-radius: 10px; font-size: 11px; margin-left: 4px; font-weight: 700; display: none; }
+.subtabs .count:not(:empty) { display: inline-block; }
 #t-shopify tbody tr:nth-child(even) td, #t-shopify tr:nth-child(even) td { background: #fdf2f8; }
 </style>
 </head>
@@ -247,7 +252,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
     </section>
     <section id="content-respuestas" class="tab-content">
       <div class="filters">
-        <label>Cuenta</label><select id="m-cuenta" onchange="renderMensajes()"><option value="">Todas</option><option value="atelier">Atelier</option><option value="oficial">Claudia Adorno (oficial)</option></select>
+        <div class="subtabs"><button id="mt-atelier" class="active" onclick="cuentaMensajes('atelier')">Atelier <span class="count" id="mc-atelier"></span></button><button id="mt-oficial" onclick="cuentaMensajes('oficial')">Claudia Adorno <span class="count" id="mc-oficial"></span></button></div>
         <label>Red</label><select id="m-red" onchange="renderMensajes()"><option value="">IG + FB</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select>
         <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option></select>
         <button class="btn" onclick="cargarMensajes().then(renderMensajes)">🔄</button>
@@ -456,25 +461,28 @@ function renderRedes(r, d1, d2, p1, p2) {
 }
 
 // ── Respuestas (bandeja IG/FB) ──
-let MSG = [];
+let MSG = [], M_CUENTA = localStorage.getItem('mk_cuenta_msg') || 'atelier';
 const NOM_CUENTA = { atelier: 'Atelier', oficial: 'Claudia Adorno' };
+function cuentaMensajes(c) { M_CUENTA = c; try { localStorage.setItem('mk_cuenta_msg', c); } catch (_) {} renderMensajes(); }
 async function cargarMensajes() {
   const { data, error } = await sb.from('marketing_mensajes').select('*').order('fecha', { ascending: false }).limit(300);
   if (error) { toast('Error mensajes: ' + error.message, 'error'); return; }
   MSG = data || [];
   const n = MSG.filter(m => m.estado === 'pendiente').length;
   const c = document.getElementById('cnt-respuestas'); if (c) { c.textContent = n ? String(n) : ''; c.title = n ? `${n} sin responder` : ''; }
+  for (const k of ['atelier', 'oficial']) { const e = document.getElementById('mc-' + k), x = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === k).length; if (e) e.textContent = x ? String(x) : ''; }
 }
 function _hace(f) { const h = (Date.now() - new Date(f)) / 36e5; return h < 1 ? `hace ${Math.round(h * 60)} min` : h < 48 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} días`; }
 function renderMensajes() {
-  const cu = document.getElementById('m-cuenta').value, red = document.getElementById('m-red').value, est = document.getElementById('m-estado').value;
-  const l = MSG.filter(m => (!cu || m.cuenta === cu) && (!red || m.plataforma === red) && m.estado === est);
-  const pend = MSG.filter(m => m.estado === 'pendiente');
+  const cu = M_CUENTA, red = document.getElementById('m-red').value, est = document.getElementById('m-estado').value;
+  document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('active', b.id === 'mt-' + cu));
+  const l = MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && m.estado === est);
+  const pend = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === cu);
   document.getElementById('m-stat').textContent = `${pend.length} sin responder · ${pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5).length} con más de 2 h`;
   document.getElementById('m-lista').innerHTML = l.length ? l.map(m => `<div class="msg ${m.estado === 'pendiente' && (Date.now() - new Date(m.fecha)) > 72e5 ? 'viejo' : ''}" id="msg-${m.id}">
       <div class="red ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma}">${m.plataforma === 'instagram' ? 'IG' : 'FB'}</div>
       <div class="cuerpo">
-        <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${esc(NOM_CUENTA[m.cuenta] || m.cuenta)} · ${_hace(m.fecha)}</span></div>
+        <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${_hace(m.fecha)}</span></div>
         ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}</div>` : ''}
         <div class="txt">${m.es_multimedia ? '<i>📎 imagen, sticker o audio (no se puede leer por acá; verlo en la app)</i>' : esc(m.texto || '')}</div>
         ${m.estado === 'pendiente' ? `<textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
