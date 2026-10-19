@@ -254,6 +254,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
       <div class="filters">
         <div class="subtabs"><button id="mt-atelier" class="active" onclick="cuentaMensajes('atelier')">Atelier <span class="count" id="mc-atelier"></span></button><button id="mt-oficial" onclick="cuentaMensajes('oficial')">Claudia Adorno <span class="count" id="mc-oficial"></span></button></div>
         <label>Red</label><select id="m-red" onchange="renderMensajes()"><option value="">IG + FB</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select>
+        <label>Tipo</label><select id="m-tipo" onchange="renderMensajes()"><option value="">Todo</option><option value="dm">Mensajes privados</option><option value="comentario">Comentarios</option></select>
         <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option></select>
         <button class="btn" onclick="cargarMensajes().then(renderMensajes)">🔄</button>
         <div class="stat" id="m-stat"></div>
@@ -474,11 +475,11 @@ async function cargarMensajes() {
 }
 function _hace(f) { const h = (Date.now() - new Date(f)) / 36e5; return h < 1 ? `hace ${Math.round(h * 60)} min` : h < 48 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} días`; }
 function renderMensajes() {
-  const cu = M_CUENTA, red = document.getElementById('m-red').value, est = document.getElementById('m-estado').value;
+  const cu = M_CUENTA, red = document.getElementById('m-red').value, est = document.getElementById('m-estado').value, tipo = document.getElementById('m-tipo').value;
   document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('active', b.id === 'mt-' + cu));
-  const l = MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && m.estado === est);
+  const l = MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && m.estado === est);
   const pend = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === cu);
-  document.getElementById('m-stat').textContent = `${pend.length} sin responder · ${pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5).length} con más de 2 h`;
+  document.getElementById('m-stat').textContent = `${pend.length} sin responder (${pend.filter(m => m.tipo === 'dm').length} privados · ${pend.filter(m => m.tipo === 'comentario').length} comentarios) · ${pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5).length} con más de 2 h`;
   document.getElementById('m-lista').innerHTML = l.length ? l.map(m => `<div class="msg ${m.estado === 'pendiente' && (Date.now() - new Date(m.fecha)) > 72e5 ? 'viejo' : ''}" id="msg-${m.id}">
       <div class="red ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma}">${m.plataforma === 'instagram' ? 'IG' : 'FB'}</div>
       <div class="cuerpo">
