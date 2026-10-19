@@ -221,7 +221,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
       <div class="filters">
         <label>Período</label>
         <select id="t-rango" onchange="renderTablero()"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 90 días</option></select>
-        <button class="btn" onclick="cargarMetricas().then(renderTablero)">🔄</button>
+        <button class="btn" onclick="cargarMetricas().then(renderTablero)" title="Actualizar los números desde la base" aria-label="Actualizar">🔄</button>
         <div class="stat" id="t-stat"></div>
       </div>
       <div id="t-kpis" class="kpis"></div>
@@ -256,7 +256,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
         <label>Red</label><select id="m-red" onchange="renderMensajes()"><option value="">IG + FB</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select>
         <label>Tipo</label><select id="m-tipo" onchange="renderMensajes()"><option value="">Todo</option><option value="dm">Mensajes privados</option><option value="comentario">Comentarios</option></select>
         <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option></select>
-        <button class="btn" onclick="cargarMensajes().then(renderMensajes)">🔄</button>
+        <button class="btn" onclick="cargarMensajes().then(renderMensajes)" title="Actualizar la lista: vuelve a leer la bandeja (mensajes nuevos y sugerencias recién redactadas)" aria-label="Actualizar">🔄</button>
         <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)" aria-label="Mejorar respuestas" style="font-size:16px;line-height:1;padding:6px 10px">✨</button>
         <div class="stat" id="m-stat"></div>
       </div>
