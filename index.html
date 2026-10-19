@@ -523,12 +523,10 @@ const META_CTA = { atelier: { page: '1237095802824116', biz: '1364792082450561' 
 function enlaceMensaje(m) {
   if (m.tipo === 'comentario') return m.post_url || null;
   const c = META_CTA[m.cuenta]; if (!c || !m.conversacion_id) return null;
-  let id = m.conversacion_id, tipo = 'FB_MESSAGE';
-  if (m.plataforma === 'instagram') {
-    tipo = 'IG_MESSAGE';
-    try { const dec = atob(id.replace(/-/g, '+').replace(/_/g, '/')); const partes = dec.split(':'); id = partes[partes.length - 1]; } catch (_) {}
-  } else if (id.startsWith('t_')) id = id.slice(2);
-  return `https://business.facebook.com/latest/inbox/all/?asset_id=${c.page}&business_id=${c.biz}&selected_item_id=${encodeURIComponent(id)}&thread_type=${tipo}`;
+  // Instagram: el id de conversación de la API no se puede traducir al de la web → se abre la bandeja de Instagram de esa cuenta (el chat queda arriba)
+  if (m.plataforma === 'instagram') return `https://business.facebook.com/latest/inbox/instagram_direct?asset_id=${c.page}&business_id=${c.biz}`;
+  const id = m.conversacion_id.startsWith('t_') ? m.conversacion_id.slice(2) : m.conversacion_id;
+  return `https://business.facebook.com/latest/inbox/all/?asset_id=${c.page}&business_id=${c.biz}&selected_item_id=${encodeURIComponent(id)}&thread_type=FB_MESSAGE`;
 }
 function _hace(f) { const h = (Date.now() - new Date(f)) / 36e5; return h < 1 ? `hace ${Math.round(h * 60)} min` : h < 48 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} días`; }
 function renderMensajes() {
