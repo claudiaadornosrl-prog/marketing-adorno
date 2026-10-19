@@ -175,6 +175,9 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .msg textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; min-height: 54px; }
 .msg .acc { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
 .msg.viejo { border-left: 4px solid var(--amber); }
+.post-thumb { flex: none; width: 92px; height: 92px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #f1f5f9; align-self: flex-start; }
+.post-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (max-width: 600px) { .post-thumb { width: 64px; height: 64px; } }
 .subtabs { display: flex; gap: 4px; margin-right: 8px; }
 .subtabs button { border: 1px solid var(--border); background: white; border-radius: 8px; padding: 6px 12px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--muted); }
 .subtabs button.active { background: var(--primary); color: white; border-color: var(--primary); }
@@ -526,7 +529,7 @@ function renderMensajes() {
       <div class="red ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma}">${m.plataforma === 'instagram' ? 'IG' : 'FB'}</div>
       <div class="cuerpo">
         <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${_hace(m.fecha)}</span></div>
-        ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}</div>` : ''}
+        ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver publicación ↗</a>` : ''}</div>` : ''}
         <div class="txt">${m.es_multimedia ? '<i>📎 imagen, sticker o audio (no se puede leer por acá; verlo en la app)</i>' : esc(m.texto || '')}</div>
         ${m.estado === 'pendiente' ? `<textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
           ${m.tipo === 'comentario' ? `<div class="mini" style="margin-top:6px">Mensaje privado a esta persona (opcional · para precios: pegá el link del producto en www.claudiaadorno.com)</div>
@@ -536,7 +539,9 @@ function renderMensajes() {
         : m.estado === 'enviado' ? `<div class="mini">✓ Enviado ${m.enviado_at ? new Date(m.enviado_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} por ${esc((m.enviado_por || '').split('@')[0])}: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>${m.dm_enviado_at ? '✓' : '⏳'} privado: "${esc(m.respuesta_dm)}"` : ''}</div>`
         : m.estado === 'error' ? `<div class="mini" style="color:var(--red)">✗ No se pudo enviar: ${esc(m.error || '')}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Reintentar</button></div>`
         : `<div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Volver a pendientes</button></div>`}
-      </div></div>`).join('')
+      </div>
+      ${m.post_imagen ? `<a class="post-thumb" href="${esc(m.post_url || m.post_imagen)}" target="_blank" rel="noopener" title="${esc(m.contexto || 'Ver publicación')}"><img src="${esc(m.post_imagen)}" alt="" loading="lazy"></a>` : ''}
+      </div>`).join('')
     : `<div class="empty">${est === 'pendiente' ? 'Nada sin responder. 🎉' : 'Nada acá.'}</div>`;
 }
 function _nombre(a) { a = (a || '').trim(); return (a.includes(' ') && !a.includes('.') && !a.includes('_')) ? a.split(' ')[0] + ', ' : ''; }
