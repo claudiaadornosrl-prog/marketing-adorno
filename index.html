@@ -518,6 +518,18 @@ async function pedirTraer() {
     await cargarMensajes(); renderMensajes();
   }, 4000);
 }
+// (v15) Link directo al mensaje en la bandeja de Meta Business Suite (o al post, si es comentario)
+const META_CTA = { atelier: { page: '1237095802824116', biz: '1364792082450561' }, oficial: { page: '183276558391685', biz: '398992653902545' } };
+function enlaceMensaje(m) {
+  if (m.tipo === 'comentario') return m.post_url || null;
+  const c = META_CTA[m.cuenta]; if (!c || !m.conversacion_id) return null;
+  let id = m.conversacion_id, tipo = 'FB_MESSAGE';
+  if (m.plataforma === 'instagram') {
+    tipo = 'IG_MESSAGE';
+    try { const dec = atob(id.replace(/-/g, '+').replace(/_/g, '/')); const partes = dec.split(':'); id = partes[partes.length - 1]; } catch (_) {}
+  } else if (id.startsWith('t_')) id = id.slice(2);
+  return `https://business.facebook.com/latest/inbox/all/?asset_id=${c.page}&business_id=${c.biz}&selected_item_id=${encodeURIComponent(id)}&thread_type=${tipo}`;
+}
 function _hace(f) { const h = (Date.now() - new Date(f)) / 36e5; return h < 1 ? `hace ${Math.round(h * 60)} min` : h < 48 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} días`; }
 function renderMensajes() {
   const cu = M_CUENTA, red = document.getElementById('m-red').value, est = document.getElementById('m-estado').value, tipo = document.getElementById('m-tipo').value;
@@ -528,9 +540,9 @@ function renderMensajes() {
   document.getElementById('m-lista').innerHTML = l.length ? l.map(m => `<div class="msg ${m.estado === 'pendiente' && (Date.now() - new Date(m.fecha)) > 72e5 ? 'viejo' : ''}" id="msg-${m.id}">
       <div class="red ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma}">${m.plataforma === 'instagram' ? 'IG' : 'FB'}</div>
       <div class="cuerpo">
-        <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${_hace(m.fecha)}</span></div>
+        <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${_hace(m.fecha)}${m.tipo === 'dm' && enlaceMensaje(m) ? ` · <a href="${esc(enlaceMensaje(m))}" target="_blank" rel="noopener">abrir en Meta ↗</a>` : ''}</span></div>
         ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver publicación ↗</a>` : ''}</div>` : ''}
-        <div class="txt">${m.es_multimedia ? '<i>📎 imagen, sticker o audio (no se puede leer por acá; verlo en la app)</i>' : esc(m.texto || '')}</div>
+        <div class="txt">${m.es_multimedia ? `<i>📎 imagen, sticker o audio (no se puede leer por acá)</i> ${enlaceMensaje(m) ? `<a href="${esc(enlaceMensaje(m))}" target="_blank" rel="noopener">abrir en Meta ↗</a>` : ''}` : esc(m.texto || '')}</div>
         ${m.estado === 'pendiente' ? `<textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
           ${m.tipo === 'comentario' ? `<div class="mini" style="margin-top:6px">Mensaje privado a esta persona (opcional · para precios: pegá el link del producto en www.claudiaadorno.com)</div>
           <textarea id="dm-${m.id}" placeholder="Ej: Alejandra, acá tenés las mantas con precio y colores: https://www.claudiaadorno.com/… Clau" style="min-height:44px">${/precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? esc(_nombre(m.autor) + 'acá tenés el producto con precio y colores: https://www.claudiaadorno.com/ . Si querés verlo en persona, está en Alcorta y en Unicenter. Clau') : ''}</textarea>` : ''}
