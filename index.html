@@ -486,17 +486,21 @@ function renderMensajes() {
         ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}</div>` : ''}
         <div class="txt">${m.es_multimedia ? '<i>📎 imagen, sticker o audio (no se puede leer por acá; verlo en la app)</i>' : esc(m.texto || '')}</div>
         ${m.estado === 'pendiente' ? `<textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
+          ${m.tipo === 'comentario' ? `<div class="mini" style="margin-top:6px">Mensaje privado a esta persona (opcional · para precios: pegá el link del producto en www.claudiaadorno.com)</div>
+          <textarea id="dm-${m.id}" placeholder="Ej: Alejandra, acá tenés las mantas con precio y colores: https://www.claudiaadorno.com/… Clau" style="min-height:44px">${/precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? esc(_nombre(m.autor) + 'acá tenés el producto con precio y colores: https://www.claudiaadorno.com/ . Si querés verlo en persona, está en Alcorta y en Unicenter. Clau') : ''}</textarea>` : ''}
           <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">Sale en la próxima pasada del servidor (≤10 min)</span></div>`
-        : m.estado === 'para_enviar' ? `<div class="mini">⏳ Por enviar: "${esc(m.respuesta || '')}"</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar envío</button></div>`
-        : m.estado === 'enviado' ? `<div class="mini">✓ Enviado ${m.enviado_at ? new Date(m.enviado_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} por ${esc((m.enviado_por || '').split('@')[0])}: "${esc(m.respuesta || '')}"</div>`
+        : m.estado === 'para_enviar' ? `<div class="mini">⏳ Por enviar: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>⏳ + privado: "${esc(m.respuesta_dm)}"` : ''}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar envío</button></div>`
+        : m.estado === 'enviado' ? `<div class="mini">✓ Enviado ${m.enviado_at ? new Date(m.enviado_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} por ${esc((m.enviado_por || '').split('@')[0])}: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>${m.dm_enviado_at ? '✓' : '⏳'} privado: "${esc(m.respuesta_dm)}"` : ''}</div>`
         : m.estado === 'error' ? `<div class="mini" style="color:var(--red)">✗ No se pudo enviar: ${esc(m.error || '')}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Reintentar</button></div>`
         : `<div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Volver a pendientes</button></div>`}
       </div></div>`).join('')
     : `<div class="empty">${est === 'pendiente' ? 'Nada sin responder. 🎉' : 'Nada acá.'}</div>`;
 }
+function _nombre(a) { a = (a || '').trim(); return (a.includes(' ') && !a.includes('.') && !a.includes('_')) ? a.split(' ')[0] + ', ' : ''; }
 async function enviarMensaje(id) {
   const t = (document.getElementById('resp-' + id)?.value || '').trim(); if (!t) { toast('Escribí la respuesta', 'error'); return; }
-  const { error } = await sb.from('marketing_mensajes').update({ respuesta: t, estado: 'para_enviar', enviado_por: session.email }).eq('id', id);
+  const dm = (document.getElementById('dm-' + id)?.value || '').trim() || null;
+  const { error } = await sb.from('marketing_mensajes').update({ respuesta: t, respuesta_dm: dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', id);
   if (error) { toast('Error: ' + error.message, 'error'); return; }
   toast('✓ Queda para enviar'); await cargarMensajes(); renderMensajes();
 }
@@ -585,6 +589,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
 
 </script>
-<script src="manual.js?v=3"></script>
+<script src="manual.js?v=4"></script>
 </body>
 </html>
