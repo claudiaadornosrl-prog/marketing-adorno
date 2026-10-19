@@ -682,7 +682,7 @@ function renderPosts() {
 
 // ── Descripciones de productos ──
 let DESC = [];
-async function cargarDescripciones() { const { data } = await sb.from('marketing_descripciones').select('*').order('id').limit(500); DESC = data || []; }
+async function cargarDescripciones() { const { data } = await sb.from('marketing_descripciones').select('*').order('id').limit(3000); DESC = data || []; }
 function renderDescripciones() {
   const ver = document.getElementById('d-ver').value;
   const l = DESC.filter(d => d.estado === ver);
