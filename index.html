@@ -256,7 +256,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
         <label>Red</label><select id="m-red" onchange="renderMensajes()"><option value="">IG + FB</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select>
         <label>Tipo</label><select id="m-tipo" onchange="renderMensajes()"><option value="">Todo</option><option value="dm">Mensajes privados</option><option value="comentario">Comentarios</option></select>
         <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option></select>
-        <button class="btn" onclick="cargarMensajes().then(renderMensajes)" title="Actualizar la lista: vuelve a leer la bandeja (mensajes nuevos y sugerencias recién redactadas)" aria-label="Actualizar">🔄</button>
+        <button class="btn" id="btn-traer" onclick="pedirTraer()" title="Buscar ahora: el servidor va a Instagram y Facebook a traer mensajes y comentarios nuevos (si no, lo hace solo cada 10 min)" aria-label="Buscar mensajes nuevos">🔄</button>
         <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)" aria-label="Mejorar respuestas" style="font-size:16px;line-height:1;padding:6px 10px">✨</button>
         <div class="stat" id="m-stat"></div>
       </div>
@@ -401,7 +401,7 @@ async function init() {
   await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas(), cargarMensajes()]);
   renderTablero(); renderContenido(); renderTareas(); renderMensajes();
   setInterval(() => cargarMensajes().then(() => { if (document.getElementById('content-respuestas').classList.contains('active')) renderMensajes(); }), 120000);
-  sb.from('marketing_pedidos').select('id').in('estado', ['pendiente', 'en_curso']).limit(1).then(({ data }) => { if (data && data.length) _vigilarPedido(); });
+  sb.from('marketing_pedidos').select('id').eq('tipo', 'redactar').in('estado', ['pendiente', 'en_curso']).limit(1).then(({ data }) => { if (data && data.length) _vigilarPedido(); });
 }
 function onTab(k) { if (k === 'tablero') renderTablero(); if (k === 'contenido') renderContenido(); if (k === 'web') renderTareas(); if (k === 'respuestas') renderMensajes(); }
 
@@ -477,7 +477,7 @@ async function cargarMensajes() {
 }
 // ── Botón "Mejorar respuestas": deja un pedido que toma el redactor (PC con Claude Code) ──
 async function pedirRedaccion() {
-  const { data: abiertos } = await sb.from('marketing_pedidos').select('id').in('estado', ['pendiente', 'en_curso']).limit(1);
+  const { data: abiertos } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'redactar').in('estado', ['pendiente', 'en_curso']).limit(1);
   if (abiertos && abiertos.length) { toast('Ya hay una redacción en curso'); _vigilarPedido(); return; }
   const { error } = await sb.from('marketing_pedidos').insert({ tipo: 'redactar', pedido_por: session.email });
   if (error) { toast('Error: ' + error.message, 'error'); return; }
@@ -488,7 +488,7 @@ function _vigilarPedido() {
   b.disabled = true; b.textContent = '⏳'; b.title = 'Redactando…';
   clearInterval(window._pedTimer);
   window._pedTimer = setInterval(async () => {
-    const { data } = await sb.from('marketing_pedidos').select('id, estado, resultado, tomado_por').order('id', { ascending: false }).limit(1);
+    const { data } = await sb.from('marketing_pedidos').select('id, estado, resultado, tomado_por').eq('tipo', 'redactar').order('id', { ascending: false }).limit(1);
     const p = data && data[0]; if (!p) return;
     if (p.estado === 'pendiente') { b.textContent = '⏳'; b.title = 'Esperando una PC con Claude…'; return; }
     if (p.estado === 'en_curso') { b.textContent = '⏳'; b.title = 'Redactando en ' + (p.tomado_por || '…'); return; }
@@ -496,6 +496,24 @@ function _vigilarPedido() {
     toast(p.estado === 'hecho' ? '✓ Listo: ' + (p.resultado || '') : '✗ ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
     await cargarMensajes(); renderMensajes();
   }, 5000);
+}
+// ── Botón 🔄: el VPS va a buscar mensajes nuevos ahora (pedido tipo 'traer') ──
+async function pedirTraer() {
+  const b = document.getElementById('btn-traer');
+  const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'traer').in('estado', ['pendiente', 'en_curso']).limit(1);
+  if (!(ab && ab.length)) {
+    const { error } = await sb.from('marketing_pedidos').insert({ tipo: 'traer', pedido_por: session.email });
+    if (error) { toast('Error: ' + error.message, 'error'); return; }
+  }
+  b.disabled = true; b.textContent = '⏳'; b.title = 'Buscando mensajes nuevos en Instagram y Facebook…';
+  clearInterval(window._traerTimer);
+  window._traerTimer = setInterval(async () => {
+    const { data } = await sb.from('marketing_pedidos').select('estado, resultado').eq('tipo', 'traer').order('id', { ascending: false }).limit(1);
+    const p = data && data[0]; if (!p || p.estado === 'pendiente' || p.estado === 'en_curso') return;
+    clearInterval(window._traerTimer); b.disabled = false; b.textContent = '🔄'; b.title = 'Buscar ahora: el servidor va a Instagram y Facebook a traer mensajes y comentarios nuevos (si no, lo hace solo cada 10 min)';
+    toast(p.estado === 'hecho' ? '✓ ' + (p.resultado || 'listo') : '✗ ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
+    await cargarMensajes(); renderMensajes();
+  }, 4000);
 }
 function _hace(f) { const h = (Date.now() - new Date(f)) / 36e5; return h < 1 ? `hace ${Math.round(h * 60)} min` : h < 48 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} días`; }
 function renderMensajes() {
