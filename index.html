@@ -257,7 +257,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
         <label>Tipo</label><select id="m-tipo" onchange="renderMensajes()"><option value="">Todo</option><option value="dm">Mensajes privados</option><option value="comentario">Comentarios</option></select>
         <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option></select>
         <button class="btn" onclick="cargarMensajes().then(renderMensajes)">🔄</button>
-        <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)">✨ Mejorar respuestas</button>
+        <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)" aria-label="Mejorar respuestas" style="font-size:16px;line-height:1;padding:6px 10px">✨</button>
         <div class="stat" id="m-stat"></div>
       </div>
       <div class="mini" style="margin:0 0 10px">El servidor trae mensajes y comentarios nuevos cada 10 minutos. Tocá <b>Enviar</b> y la respuesta sale en la próxima pasada (hasta 10 min). Nada se manda solo.</div>
@@ -485,14 +485,14 @@ async function pedirRedaccion() {
 }
 function _vigilarPedido() {
   const b = document.getElementById('btn-mejorar'); if (!b) return;
-  b.disabled = true; b.textContent = '⏳ Redactando…';
+  b.disabled = true; b.textContent = '⏳'; b.title = 'Redactando…';
   clearInterval(window._pedTimer);
   window._pedTimer = setInterval(async () => {
     const { data } = await sb.from('marketing_pedidos').select('id, estado, resultado, tomado_por').order('id', { ascending: false }).limit(1);
     const p = data && data[0]; if (!p) return;
-    if (p.estado === 'pendiente') { b.textContent = '⏳ Esperando una PC con Claude…'; return; }
-    if (p.estado === 'en_curso') { b.textContent = '⏳ Redactando en ' + (p.tomado_por || '…'); return; }
-    clearInterval(window._pedTimer); b.disabled = false; b.textContent = '✨ Mejorar respuestas';
+    if (p.estado === 'pendiente') { b.textContent = '⏳'; b.title = 'Esperando una PC con Claude…'; return; }
+    if (p.estado === 'en_curso') { b.textContent = '⏳'; b.title = 'Redactando en ' + (p.tomado_por || '…'); return; }
+    clearInterval(window._pedTimer); b.disabled = false; b.textContent = '✨'; b.title = 'Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)';
     toast(p.estado === 'hecho' ? '✓ Listo: ' + (p.resultado || '') : '✗ ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
     await cargarMensajes(); renderMensajes();
   }, 5000);
