@@ -37,10 +37,38 @@ function _manualSecciones() {
         'Cada mensaje viene con una respuesta sugerida: la corregís si hace falta y tocás Enviar. Sale en menos de un minuto. Nada se manda solo.',
         'Precios: nunca en público. En el comentario va "te paso la info por mensaje" y, en el cuadro de abajo, el mensaje privado con el link del producto en www.claudiaadorno.com. Se mandan los dos juntos.',
         'La voz es la de Claudia (firma "Clau"): guía completa en Marketing/redes/voz-respuestas.md. El atelier no se menciona hasta mayo de 2027.',
+        'Frases guardadas: los botoncitos arriba del cuadro (Horarios, Comprar online, WhatsApp…) agregan ese texto a la respuesta con un clic.',
+        'Si una publicación tiene varios comentarios sin responder, en el primero aparece "Enviar los N de esta publicación": manda de una vez lo que está escrito en cada cuadro.',
+        'Si la misma persona escribió en dos lados (comentario y privado, o Instagram y Facebook), la ficha lo avisa en ámbar para responder una sola vez.',
         '✨ Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (lee el mensaje y la publicación, con la voz de Clau) y la deja como sugerencia. Lo hace una PC de la oficina que tenga Claude instalado; tarda unos minutos. También pasa solo a las 9 y a las 17. Nunca envía nada.',
         'Ignorar lo saca de la lista (stickers, saludos, spam). Se puede volver a pendientes desde el filtro "Ignorados".',
         'Las imágenes, stickers y audios no se pueden leer por acá: se ven en la app de Instagram o Facebook.',
         'Si algo lleva más de 2 horas sin responder, la fila se marca en ámbar y a JP le llega un aviso al celular. El número naranja de la pestaña es la cantidad sin responder.',
+      ],
+    },
+    {
+      icon: '💲', titulo: 'Oportunidades',
+      desc: 'Cada pregunta de precio es alguien con ganas de comprar.',
+      pasos: [
+        'Acá quedan todos los mensajes y comentarios que preguntaron precio (últimos 90 días), con el estado de la respuesta y si se mandó el link.',
+        'Anotá qué producto era y, cuando sepas, si compró o no. Con eso el módulo cuenta cuántas consultas terminan en venta.',
+      ],
+    },
+    {
+      icon: '🖼', titulo: 'Publicaciones',
+      desc: 'Qué publicación funcionó: las últimas 25 de cada cuenta con alcance, me gusta, comentarios, compartidos y guardados.',
+      pasos: [
+        'Ordená por interacción para saber qué repetir. Se actualiza todas las mañanas.',
+        'Cuando arranque la pauta, las de arriba son las candidatas a promocionar.',
+      ],
+    },
+    {
+      icon: '📝', titulo: 'Descripciones de la tienda',
+      desc: 'Los productos de Shopify sin descripción (o en mayúsculas del Dragonfish) reciben un texto con la identidad del atelier.',
+      pasos: [
+        '✨ Redactar 30 más: Claude escribe 30 propuestas (texto + título y descripción para Google). Las ves en "Propuestas por aprobar".',
+        'Aprobá, corregí o descartá cada una. Lo aprobado se sube a Shopify solo cada hora, o al toque con "⬆ Subir aprobadas". Nunca se tocan precios ni títulos.',
+        'La auditoría de la tienda corre todos los lunes y deja las tareas en Tareas: sin precio, sin foto, sin descripción, sin SEO.',
       ],
     },
     {

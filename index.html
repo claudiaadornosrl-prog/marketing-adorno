@@ -178,6 +178,9 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .post-thumb { flex: none; width: 170px; align-self: stretch; min-height: 120px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #f1f5f9; }
 .post-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 @media (max-width: 600px) { .post-thumb { width: 96px; min-height: 96px; } }
+.frases { display: flex; gap: 4px; flex-wrap: wrap; margin: 4px 0; }
+.chip-f { border: 1px solid var(--border); background: #fff; border-radius: 10px; padding: 2px 8px; font-size: 11px; cursor: pointer; font-family: inherit; color: var(--muted); }
+.chip-f:hover { background: var(--primary-bg); color: var(--primary); border-color: var(--primary); }
 .subtabs { display: flex; gap: 4px; margin-right: 8px; }
 .subtabs button { border: 1px solid var(--border); background: white; border-radius: 8px; padding: 6px 12px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--muted); }
 .subtabs button.active { background: var(--primary); color: white; border-color: var(--primary); }
@@ -207,7 +210,10 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
     <nav class="tabs" id="tabs">
       <button id="tab-tablero" class="active" onclick="switchTab('tablero')" title="Tablero"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span class="lb">Tablero</span></button>
       <button id="tab-respuestas" onclick="switchTab('respuestas')" title="Respuestas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="lb">Respuestas</span><span class="count" id="cnt-respuestas"></span></button>
+      <button id="tab-oportunidades" onclick="switchTab('oportunidades')" title="Oportunidades"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="18"/></svg><span class="lb">Oportunidades</span></button>
+      <button id="tab-posts" onclick="switchTab('posts')" title="Publicaciones"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="lb">Publicaciones</span></button>
       <button id="tab-contenido" onclick="switchTab('contenido')" title="Contenido"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="lb">Contenido</span></button>
+      <button id="tab-descripciones" onclick="switchTab('descripciones')" title="Descripciones"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg><span class="lb">Descripciones</span></button>
       <button id="tab-web" onclick="switchTab('web')" title="Tareas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="lb">Tareas</span></button>
       <button id="tab-pauta" onclick="switchTab('pauta')" title="Pauta"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg><span class="lb">Pauta</span></button>
     </nav>
@@ -265,6 +271,34 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
       </div>
       <div class="mini" style="margin:0 0 10px">El servidor trae mensajes y comentarios nuevos cada 10 minutos (🔄 para buscar ahora). Tocá <b>Enviar</b> y la respuesta sale en menos de un minuto. Nada se manda solo.</div>
       <div id="m-lista"></div>
+    </section>
+    <section id="content-oportunidades" class="tab-content">
+      <div class="filters">
+        <label>Ver</label><select id="o-ver" onchange="renderOportunidades()"><option value="abiertas">Abiertas</option><option value="todas">Todas (90 días)</option></select>
+        <div class="stat" id="o-stat"></div>
+      </div>
+      <div class="mini" style="margin:0 0 10px">Cada pregunta de precio es alguien con ganas de comprar. Anotá el producto y, cuando sepas, si terminó comprando.</div>
+      <div id="o-lista"></div>
+    </section>
+    <section id="content-posts" class="tab-content">
+      <div class="filters">
+        <label>Cuenta</label><select id="p-cuenta" onchange="renderPosts()"><option value="">Todas</option><option value="atelier">Atelier</option><option value="oficial">Claudia Adorno</option></select>
+        <label>Red</label><select id="p-red" onchange="renderPosts()"><option value="">IG + FB</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select>
+        <label>Orden</label><select id="p-orden" onchange="renderPosts()"><option value="inter">Más interacción</option><option value="alcance">Más alcance</option><option value="fecha">Más reciente</option></select>
+        <div class="stat" id="p-stat"></div>
+      </div>
+      <div class="mini" style="margin:0 0 10px">Las últimas 25 publicaciones de cada cuenta, con sus números (se actualizan todas las mañanas). Lo que más interacción tiene es lo que conviene repetir y, cuando arranque la pauta, promocionar.</div>
+      <div id="p-lista"></div>
+    </section>
+    <section id="content-descripciones" class="tab-content">
+      <div class="filters">
+        <label>Ver</label><select id="d-ver" onchange="renderDescripciones()"><option value="propuesta">Propuestas por aprobar</option><option value="aprobada">Aprobadas (por subir)</option><option value="aplicada">Subidas a la tienda</option><option value="pendiente">Sin redactar</option><option value="error">Con error</option><option value="descartada">Descartadas</option></select>
+        <button class="btn primary" id="btn-desc" onclick="pedirDescripciones()" title="Claude redacta 30 descripciones más, con la identidad del atelier, para que las apruebes">✨ Redactar 30 más</button>
+        <button class="btn" id="btn-aplicar" onclick="pedirAplicar()" title="Sube a Shopify las descripciones aprobadas (también pasa solo cada hora)">⬆ Subir aprobadas</button>
+        <div class="stat" id="d-stat"></div>
+      </div>
+      <div class="mini" style="margin:0 0 10px">Los productos de la tienda que no tienen descripción (o la tienen en mayúsculas del Dragonfish). Claude propone el texto y el SEO con la identidad del atelier; vos aprobás, corregís o descartás. Lo aprobado se sube a Shopify solo. No se tocan precios ni títulos.</div>
+      <div id="d-lista"></div>
     </section>
     <section id="content-pauta" class="tab-content">
       <div class="card">
@@ -401,12 +435,12 @@ const ESTADO_CHIP = { idea: 'gray', borrador: 'amber', aprobada: 'green', public
 
 async function init() {
   document.getElementById('franja-prueba').style.display = 'none';
-  await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas(), cargarMensajes()]);
-  renderTablero(); renderContenido(); renderTareas(); renderMensajes();
+  await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas(), cargarMensajes(), cargarFrases(), cargarPosts(), cargarDescripciones()]);
+  renderTablero(); renderContenido(); renderTareas(); renderMensajes(); renderOportunidades(); renderPosts(); renderDescripciones();
   setInterval(() => cargarMensajes().then(() => { if (document.getElementById('content-respuestas').classList.contains('active')) renderMensajes(); }), 120000);
   sb.from('marketing_pedidos').select('id').eq('tipo', 'redactar').in('estado', ['pendiente', 'en_curso']).limit(1).then(({ data }) => { if (data && data.length) _vigilarPedido(); });
 }
-function onTab(k) { if (k === 'tablero') renderTablero(); if (k === 'contenido') renderContenido(); if (k === 'web') renderTareas(); if (k === 'respuestas') renderMensajes(); }
+function onTab(k) { if (k === 'tablero') renderTablero(); if (k === 'contenido') renderContenido(); if (k === 'web') renderTareas(); if (k === 'respuestas') renderMensajes(); if (k === 'oportunidades') renderOportunidades(); if (k === 'posts') renderPosts(); if (k === 'descripciones') renderDescripciones(); }
 
 // ── Tablero ──
 async function cargarMetricas() {
@@ -430,6 +464,11 @@ function renderTablero() {
   const ultCat = m => { const x = MET.filter(q => q.fuente === 'shopify' && q.metrica === m); return x.length ? Number(x[x.length - 1].valor) : null; };
   document.getElementById('t-kpis').innerHTML = _kpi('Sesiones en la tienda', ses, sesP) + _kpi('Agregaron al carrito', car, carP) + _kpi('Pedidos', ped, pedP) + _kpi('Ventas netas', ven, venP, true)
     + (ultCat('productos_sin_precio') !== null ? `<div class="kpi"><div class="l">Activos sin precio</div><div class="n" style="color:var(--red)">${ultCat('productos_sin_precio')}</div><div class="d">de ${ultCat('productos_activos')} productos activos</div></div>` : '');
+  // (lote 2) tiempo de respuesta en redes, últimos 30 días: desde que escribieron hasta que se envió desde acá
+  const env = MSG.filter(m => m.estado === 'enviado' && m.enviado_at && (Date.now() - new Date(m.fecha)) < 30 * 864e5);
+  const horas = env.map(m => (new Date(m.enviado_at) - new Date(m.fecha)) / 36e5).filter(h => h >= 0 && h < 24 * 30);
+  const prom = horas.length ? horas.reduce((a, b) => a + b, 0) / horas.length : null, rapidos = horas.length ? Math.round(horas.filter(h => h <= 2).length / horas.length * 100) : null;
+  document.getElementById('t-kpis').innerHTML += prom === null ? '' : `<div class="kpi"><div class="l">Tiempo de respuesta en redes</div><div class="n">${prom < 1 ? Math.round(prom * 60) + ' min' : prom.toFixed(1) + ' h'}</div><div class="d">${rapidos}% respondidos en menos de 2 h · ${horas.length} respuestas en 30 días</div></div>`;
   const ultima = MET.filter(m => m.fuente === 'shopify').map(m => m.fecha).sort().pop();
   document.getElementById('t-stat').textContent = ultima ? `Shopify actualizado al ${ultima.split('-').reverse().join('/')}` : 'Sin datos todavía';
   // barras por día (sesiones) + tabla
@@ -477,6 +516,40 @@ async function cargarMensajes() {
   const n = MSG.filter(m => m.estado === 'pendiente').length;
   const c = document.getElementById('cnt-respuestas'); if (c) { c.textContent = n ? String(n) : ''; c.title = n ? `${n} sin responder` : ''; }
   for (const k of ['atelier', 'oficial']) { const e = document.getElementById('mc-' + k), x = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === k).length; if (e) e.textContent = x ? String(x) : ''; }
+}
+// ── Frases guardadas (marketing_frases) ──
+let FRASES = [];
+async function cargarFrases() { const { data } = await sb.from('marketing_frases').select('id, nombre, texto').eq('activa', true).order('orden'); FRASES = data || []; }
+function insertarFrase(id, fid) {
+  const f = FRASES.find(x => x.id === fid), t = document.getElementById('resp-' + id); if (!f || !t) return;
+  const base = t.value.replace(/\s*Clau\s*$/, '').trim();
+  t.value = (base ? base + ' ' : '') + f.texto + (MSG.find(m => m.id === id)?.tipo === 'comentario' ? ' Clau' : '');
+  t.focus();
+}
+// ── Misma persona en varios lados (evita responder dos veces) ──
+function _repetidos(m) {
+  if (!m.autor) return '';
+  const otros = MSG.filter(x => x.id !== m.id && x.estado === 'pendiente' && (x.autor || '').toLowerCase() === m.autor.toLowerCase());
+  if (!otros.length) return '';
+  return `<div class="mini" style="color:#b45309">⚠ Esta persona también tiene ${otros.length} mensaje(s) más sin responder: ${otros.map(x => `<a href="#" onclick="document.getElementById('msg-${x.id}')?.scrollIntoView({behavior:'smooth'});return false;">${x.plataforma === 'instagram' ? 'IG' : 'FB'} ${x.tipo === 'dm' ? 'privado' : 'comentario'}</a>`).join(' · ')}. Conviene responder una sola vez.</div>`;
+}
+// ── Lote: responder todos los comentarios pendientes de una misma publicación ──
+function _loteBtn(m, lista) {
+  if (m.tipo !== 'comentario' || !m.conversacion_id) return '';
+  const grupo = lista.filter(x => x.tipo === 'comentario' && x.conversacion_id === m.conversacion_id && x.estado === 'pendiente');
+  if (grupo.length < 2 || grupo[0].id !== m.id) return '';
+  return `<button class="btn" style="margin-left:auto" onclick="enviarLote('${esc(m.conversacion_id)}')" title="Envía la respuesta que está en cada cuadro de los ${grupo.length} comentarios pendientes de esta publicación">📤 Enviar los ${grupo.length} de esta publicación</button>`;
+}
+async function enviarLote(postId) {
+  const grupo = MSG.filter(x => x.tipo === 'comentario' && x.conversacion_id === postId && x.estado === 'pendiente');
+  const filas = grupo.map(x => ({ id: x.id, t: (document.getElementById('resp-' + x.id)?.value || '').trim(), dm: (document.getElementById('dm-' + x.id)?.value || '').trim() || null })).filter(x => x.t);
+  if (!filas.length) { toast('No hay respuestas escritas', 'error'); return; }
+  if (!confirm(`¿Enviar ${filas.length} respuestas a los comentarios de esta publicación?`)) return;
+  for (const f of filas) await sb.from('marketing_mensajes').update({ respuesta: f.t, respuesta_dm: f.dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', f.id).eq('estado', 'pendiente');
+  const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'enviar').in('estado', ['pendiente', 'en_curso']).limit(1);
+  if (!(ab && ab.length)) await sb.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
+  toast(`✓ ${filas.length} respuestas en camino (menos de 1 minuto)`); await cargarMensajes(); renderMensajes();
+  clearTimeout(window._envTimer); window._envTimer = setTimeout(() => cargarMensajes().then(renderMensajes), 70000);
 }
 // ── Botón "Mejorar respuestas": deja un pedido que toma el redactor (PC con Claude Code) ──
 async function pedirRedaccion() {
@@ -540,10 +613,12 @@ function renderMensajes() {
         <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${_hace(m.fecha)}${m.tipo === 'dm' && enlaceMensaje(m) ? ` · <a href="${esc(enlaceMensaje(m))}" target="_blank" rel="noopener">abrir en Meta ↗</a>` : ''}</span></div>
         ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver publicación ↗</a>` : ''}</div>` : ''}
         <div class="txt">${m.es_multimedia ? (enlaceMensaje(m) ? `<a href="${esc(enlaceMensaje(m))}" target="_blank" rel="noopener" title="Abrir en Meta"><i>📎 imagen, sticker o audio (no se puede leer por acá)</i></a>` : '<i>📎 imagen, sticker o audio (no se puede leer por acá)</i>') : esc(m.texto || '')}</div>
-        ${m.estado === 'pendiente' ? `<textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
+        ${_repetidos(m)}
+        ${m.estado === 'pendiente' ? `<div class="frases">${FRASES.map(f => `<button class="chip-f" onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</button>`).join('')}</div>
+          <textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
           ${m.tipo === 'comentario' ? `<div class="mini" style="margin-top:6px">Mensaje privado a esta persona (opcional · para precios: pegá el link del producto en www.claudiaadorno.com)</div>
           <textarea id="dm-${m.id}" placeholder="Ej: Alejandra, acá tenés las mantas con precio y colores: https://www.claudiaadorno.com/… Clau" style="min-height:44px">${/precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? esc(_nombre(m.autor) + 'acá tenés el producto con precio y colores: https://www.claudiaadorno.com/ . Si querés verlo en persona, está en Alcorta y en Unicenter. Clau') : ''}</textarea>` : ''}
-          <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">Sale en menos de 1 minuto</span></div>`
+          <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`
         : m.estado === 'para_enviar' ? `<div class="mini">⏳ Por enviar: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>⏳ + privado: "${esc(m.respuesta_dm)}"` : ''}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar envío</button></div>`
         : m.estado === 'enviado' ? `<div class="mini">✓ Enviado ${m.enviado_at ? new Date(m.enviado_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} por ${esc((m.enviado_por || '').split('@')[0])}: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>${m.dm_enviado_at ? '✓' : '⏳'} privado: "${esc(m.respuesta_dm)}"` : ''}</div>`
         : m.estado === 'error' ? `<div class="mini" style="color:var(--red)">✗ No se pudo enviar: ${esc(m.error || '')}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Reintentar</button></div>`
@@ -569,6 +644,83 @@ async function estadoMensaje(id, estado) {
   const { error } = await sb.from('marketing_mensajes').update({ estado }).eq('id', id);
   if (error) { toast('Error: ' + error.message, 'error'); return; }
   await cargarMensajes(); renderMensajes();
+}
+
+// ── Oportunidades de venta (preguntas de precio) ──
+function renderOportunidades() {
+  const ver = document.getElementById('o-ver').value;
+  const desde = new Date(Date.now() - 90 * 864e5).toISOString();
+  const l = MSG.filter(m => m.oportunidad && m.fecha >= desde && (ver === 'todas' || (m.venta !== 'no' && m.venta !== 'si')));
+  const ventas = MSG.filter(m => m.oportunidad && m.fecha >= desde && m.venta === 'si').length, total = MSG.filter(m => m.oportunidad && m.fecha >= desde).length;
+  document.getElementById('o-stat').textContent = `${total} consultas de precio en 90 días · ${ventas} terminaron en venta`;
+  document.getElementById('o-lista').innerHTML = l.length ? l.map(m => `<div class="msg">
+      <div class="red ${m.plataforma === 'instagram' ? 'ig' : 'fb'}">${m.plataforma === 'instagram' ? 'IG' : 'FB'}</div>
+      <div class="cuerpo"><div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'privado' : 'comentario'} · ${esc(NOM_CUENTA[m.cuenta] || m.cuenta)} · ${_hace(m.fecha)} · ${m.estado === 'enviado' ? '✓ respondido' : m.estado === 'pendiente' ? '⏳ sin responder' : esc(m.estado)}${m.respuesta_dm ? ' · 📩 link enviado' : ''}</span></div>
+        ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}</div>` : ''}<div class="txt">${esc(m.texto || '')}</div>
+        <div class="acc"><input placeholder="¿Qué producto es?" value="${esc(m.producto || '')}" onchange="guardarOportunidad(${m.id}, {producto: this.value})" style="flex:1;min-width:160px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit">
+          <select onchange="guardarOportunidad(${m.id}, {venta: this.value || null})" style="padding:6px;border:1px solid var(--border);border-radius:8px;font-family:inherit"><option value="" ${!m.venta ? 'selected' : ''}>¿Compró?</option><option value="si" ${m.venta === 'si' ? 'selected' : ''}>Sí, compró</option><option value="no" ${m.venta === 'no' ? 'selected' : ''}>No compró</option></select></div>
+      </div>${m.post_imagen ? `<a class="post-thumb" href="${esc(m.post_url || m.post_imagen)}" target="_blank" rel="noopener"><img src="${esc(m.post_imagen)}" alt="" loading="lazy"></a>` : ''}</div>`).join('')
+    : '<div class="empty">Sin consultas de precio abiertas.</div>';
+}
+async function guardarOportunidad(id, upd) { const { error } = await sb.from('marketing_mensajes').update(upd).eq('id', id); if (error) toast('Error: ' + error.message, 'error'); else { Object.assign(MSG.find(m => m.id === id) || {}, upd); toast('✓'); } }
+
+// ── Publicaciones ──
+let POSTS = [];
+async function cargarPosts() { const { data } = await sb.from('marketing_posts').select('*').order('fecha', { ascending: false }).limit(200); POSTS = data || []; }
+function renderPosts() {
+  const cu = document.getElementById('p-cuenta').value, red = document.getElementById('p-red').value, ord = document.getElementById('p-orden').value;
+  const inter = p => Number(p.likes || 0) + Number(p.comentarios || 0) + Number(p.compartidos || 0) + Number(p.guardados || 0);
+  let l = POSTS.filter(p => (!cu || p.cuenta === cu) && (!red || p.plataforma === red));
+  l.sort((a, b) => ord === 'fecha' ? (b.fecha || '').localeCompare(a.fecha || '') : ord === 'alcance' ? Number(b.alcance || 0) - Number(a.alcance || 0) : inter(b) - inter(a));
+  document.getElementById('p-stat').textContent = `${l.length} publicaciones`;
+  document.getElementById('p-lista').innerHTML = l.length ? `<table><tr><th></th><th>Publicación</th><th class="num">Alcance</th><th class="num">Me gusta</th><th class="num">Coment.</th><th class="num">Compart.</th><th class="num">Guard.</th><th class="num">Total</th></tr>` + l.map(p => `<tr>
+      <td>${p.imagen ? `<a href="${esc(p.url || '#')}" target="_blank" rel="noopener"><img src="${esc(p.imagen)}" alt="" loading="lazy" style="width:56px;height:56px;object-fit:cover;border-radius:8px;display:block"></a>` : ''}</td>
+      <td><div style="font-size:11px;color:var(--muted)">${p.plataforma === 'instagram' ? 'IG' : 'FB'} · ${esc(NOM_CUENTA[p.cuenta] || p.cuenta)} · ${p.fecha ? p.fecha.slice(0, 10).split('-').reverse().join('/') : ''}${p.tipo ? ' · ' + esc(p.tipo) : ''}</div><div style="max-width:420px;white-space:normal">${esc((p.texto || '').slice(0, 110))}${(p.texto || '').length > 110 ? '…' : ''}</div></td>
+      <td class="num">${p.alcance != null ? Number(p.alcance).toLocaleString('es-AR') : '—'}</td><td class="num">${p.likes ?? '—'}</td><td class="num">${p.comentarios ?? '—'}</td><td class="num">${p.compartidos ?? '—'}</td><td class="num">${p.guardados ?? '—'}</td><td class="num"><b>${inter(p)}</b></td></tr>`).join('') + '</table>'
+    : '<div class="empty">Todavía no hay publicaciones cargadas.</div>';
+}
+
+// ── Descripciones de productos ──
+let DESC = [];
+async function cargarDescripciones() { const { data } = await sb.from('marketing_descripciones').select('*').order('id').limit(500); DESC = data || []; }
+function renderDescripciones() {
+  const ver = document.getElementById('d-ver').value;
+  const l = DESC.filter(d => d.estado === ver);
+  const c = e => DESC.filter(d => d.estado === e).length;
+  document.getElementById('d-stat').textContent = `${c('propuesta')} por aprobar · ${c('aprobada')} por subir · ${c('aplicada')} subidas · ${c('pendiente')} sin redactar`;
+  document.getElementById('d-lista').innerHTML = l.length ? l.slice(0, 60).map(d => `<div class="msg" id="desc-${d.id}"><div class="cuerpo">
+      <div><span class="quien">${esc(d.titulo || '')}</span> <span class="meta">· <a href="https://www.claudiaadorno.com/products/${esc(d.handle || '')}" target="_blank" rel="noopener">ver en la tienda ↗</a></span></div>
+      <div class="ctx">Actual: ${esc(d.descripcion_actual || '(vacía)')}</div>
+      ${ver === 'propuesta' || ver === 'aprobada' ? `<textarea id="dtx-${d.id}" style="min-height:90px">${esc(d.propuesta || '')}</textarea>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><input id="dst-${d.id}" value="${esc(d.seo_titulo || '')}" placeholder="Título para Google (hasta 60)" maxlength="70" style="flex:1;min-width:200px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit"><input id="dsd-${d.id}" value="${esc(d.seo_descripcion || '')}" placeholder="Descripción para Google (hasta 150)" maxlength="320" style="flex:2;min-width:240px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-family:inherit"></div>
+        <div class="acc">${ver === 'propuesta' ? `<button class="btn primary" onclick="estadoDesc(${d.id}, 'aprobada')">✓ Aprobar</button>` : `<button class="btn primary" onclick="estadoDesc(${d.id}, 'aprobada')">Guardar cambios</button><button class="btn" onclick="estadoDesc(${d.id}, 'propuesta')">Volver a propuesta</button>`}<button class="btn" onclick="estadoDesc(${d.id}, 'descartada')">Descartar</button></div>`
+      : `<div class="txt">${esc(d.propuesta || '')}</div>${d.error ? `<div class="mini" style="color:var(--red)">✗ ${esc(d.error)}</div><div class="acc"><button class="btn" onclick="estadoDesc(${d.id}, 'aprobada')">Reintentar</button></div>` : ''}${ver === 'descartada' ? `<div class="acc"><button class="btn" onclick="estadoDesc(${d.id}, 'pendiente')">Volver a redactar</button></div>` : ''}`}
+    </div></div>`).join('') + (l.length > 60 ? `<div class="mini">Mostrando 60 de ${l.length}.</div>` : '')
+    : `<div class="empty">${ver === 'propuesta' ? 'No hay propuestas: tocá ✨ para que Claude redacte 30.' : 'Nada acá.'}</div>`;
+}
+async function estadoDesc(id, estado) {
+  const upd = { estado };
+  const t = document.getElementById('dtx-' + id); if (t) { upd.propuesta = t.value.trim(); upd.seo_titulo = (document.getElementById('dst-' + id)?.value || '').trim() || null; upd.seo_descripcion = (document.getElementById('dsd-' + id)?.value || '').trim() || null; }
+  if (estado === 'aprobada') { if (!upd.propuesta && !(DESC.find(d => d.id === id) || {}).propuesta) { toast('Falta el texto', 'error'); return; } upd.aprobado_por = session.email; upd.aprobado_at = new Date().toISOString(); upd.error = null; }
+  const { error } = await sb.from('marketing_descripciones').update(upd).eq('id', id); if (error) { toast('Error: ' + error.message, 'error'); return; }
+  await cargarDescripciones(); renderDescripciones();
+}
+async function pedirDescripciones() { await _pedidoGenerico('descripciones', 'btn-desc', '✨ Redactar 30 más', () => cargarDescripciones().then(renderDescripciones)); }
+async function pedirAplicar() { await _pedidoGenerico('aplicar_descripciones', 'btn-aplicar', '⬆ Subir aprobadas', () => cargarDescripciones().then(renderDescripciones)); }
+async function _pedidoGenerico(tipo, btnId, label, alTerminar) {
+  const b = document.getElementById(btnId);
+  const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', tipo).in('estado', ['pendiente', 'en_curso']).limit(1);
+  if (!(ab && ab.length)) { const { error } = await sb.from('marketing_pedidos').insert({ tipo, pedido_por: session.email }); if (error) { toast('Error: ' + error.message, 'error'); return; } }
+  b.disabled = true; b.textContent = '⏳ Trabajando…';
+  const timer = setInterval(async () => {
+    const { data } = await sb.from('marketing_pedidos').select('estado, resultado, tomado_por').eq('tipo', tipo).order('id', { ascending: false }).limit(1);
+    const p = data && data[0]; if (!p) return;
+    if (p.estado === 'pendiente') { b.textContent = '⏳ Esperando…'; return; }
+    if (p.estado === 'en_curso') { b.textContent = '⏳ ' + (p.tomado_por || '…'); return; }
+    clearInterval(timer); b.disabled = false; b.textContent = label;
+    toast(p.estado === 'hecho' ? '✓ ' + (p.resultado || 'listo') : '✗ ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
+    alTerminar();
+  }, 5000);
 }
 
 // ── Contenido ──
@@ -650,6 +802,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
 
 </script>
-<script src="manual.js?v=5"></script>
+<script src="manual.js?v=6"></script>
 </body>
 </html>
