@@ -37,6 +37,7 @@ function _manualSecciones() {
         'Cada mensaje viene con una respuesta sugerida: la corregís si hace falta y tocás Enviar. Sale en la próxima pasada del servidor (hasta 10 minutos). Nada se manda solo.',
         'Precios: nunca en público. En el comentario va "te paso la info por mensaje" y, en el cuadro de abajo, el mensaje privado con el link del producto en www.claudiaadorno.com. Se mandan los dos juntos.',
         'La voz es la de Claudia (firma "Clau"): guía completa en Marketing/redes/voz-respuestas.md. El atelier no se menciona hasta mayo de 2027.',
+        '✨ Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (lee el mensaje y la publicación, con la voz de Clau) y la deja como sugerencia. Lo hace una PC de la oficina que tenga Claude instalado; tarda unos minutos. También pasa solo a las 9 y a las 17. Nunca envía nada.',
         'Ignorar lo saca de la lista (stickers, saludos, spam). Se puede volver a pendientes desde el filtro "Ignorados".',
         'Las imágenes, stickers y audios no se pueden leer por acá: se ven en la app de Instagram o Facebook.',
         'Si algo lleva más de 2 horas sin responder, la fila se marca en ámbar y a JP le llega un aviso al celular. El número naranja de la pestaña es la cantidad sin responder.',

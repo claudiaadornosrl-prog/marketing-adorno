@@ -257,6 +257,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
         <label>Tipo</label><select id="m-tipo" onchange="renderMensajes()"><option value="">Todo</option><option value="dm">Mensajes privados</option><option value="comentario">Comentarios</option></select>
         <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option></select>
         <button class="btn" onclick="cargarMensajes().then(renderMensajes)">🔄</button>
+        <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)">✨ Mejorar respuestas</button>
         <div class="stat" id="m-stat"></div>
       </div>
       <div class="mini" style="margin:0 0 10px">El servidor trae mensajes y comentarios nuevos cada 10 minutos. Tocá <b>Enviar</b> y la respuesta sale en la próxima pasada (hasta 10 min). Nada se manda solo.</div>
@@ -400,6 +401,7 @@ async function init() {
   await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas(), cargarMensajes()]);
   renderTablero(); renderContenido(); renderTareas(); renderMensajes();
   setInterval(() => cargarMensajes().then(() => { if (document.getElementById('content-respuestas').classList.contains('active')) renderMensajes(); }), 120000);
+  sb.from('marketing_pedidos').select('id').in('estado', ['pendiente', 'en_curso']).limit(1).then(({ data }) => { if (data && data.length) _vigilarPedido(); });
 }
 function onTab(k) { if (k === 'tablero') renderTablero(); if (k === 'contenido') renderContenido(); if (k === 'web') renderTareas(); if (k === 'respuestas') renderMensajes(); }
 
@@ -472,6 +474,28 @@ async function cargarMensajes() {
   const n = MSG.filter(m => m.estado === 'pendiente').length;
   const c = document.getElementById('cnt-respuestas'); if (c) { c.textContent = n ? String(n) : ''; c.title = n ? `${n} sin responder` : ''; }
   for (const k of ['atelier', 'oficial']) { const e = document.getElementById('mc-' + k), x = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === k).length; if (e) e.textContent = x ? String(x) : ''; }
+}
+// ── Botón "Mejorar respuestas": deja un pedido que toma el redactor (PC con Claude Code) ──
+async function pedirRedaccion() {
+  const { data: abiertos } = await sb.from('marketing_pedidos').select('id').in('estado', ['pendiente', 'en_curso']).limit(1);
+  if (abiertos && abiertos.length) { toast('Ya hay una redacción en curso'); _vigilarPedido(); return; }
+  const { error } = await sb.from('marketing_pedidos').insert({ tipo: 'redactar', pedido_por: session.email });
+  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  toast('✓ Pedido enviado: Claude está redactando'); _vigilarPedido();
+}
+function _vigilarPedido() {
+  const b = document.getElementById('btn-mejorar'); if (!b) return;
+  b.disabled = true; b.textContent = '⏳ Redactando…';
+  clearInterval(window._pedTimer);
+  window._pedTimer = setInterval(async () => {
+    const { data } = await sb.from('marketing_pedidos').select('id, estado, resultado, tomado_por').order('id', { ascending: false }).limit(1);
+    const p = data && data[0]; if (!p) return;
+    if (p.estado === 'pendiente') { b.textContent = '⏳ Esperando una PC con Claude…'; return; }
+    if (p.estado === 'en_curso') { b.textContent = '⏳ Redactando en ' + (p.tomado_por || '…'); return; }
+    clearInterval(window._pedTimer); b.disabled = false; b.textContent = '✨ Mejorar respuestas';
+    toast(p.estado === 'hecho' ? '✓ Listo: ' + (p.resultado || '') : '✗ ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
+    await cargarMensajes(); renderMensajes();
+  }, 5000);
 }
 function _hace(f) { const h = (Date.now() - new Date(f)) / 36e5; return h < 1 ? `hace ${Math.round(h * 60)} min` : h < 48 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} días`; }
 function renderMensajes() {
@@ -590,6 +614,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
 
 </script>
-<script src="manual.js?v=4"></script>
+<script src="manual.js?v=5"></script>
 </body>
 </html>
