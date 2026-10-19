@@ -34,7 +34,7 @@ function _manualSecciones() {
       pasos: [
         'Arriba elegís la cuenta: Atelier o Claudia Adorno. Cada una tiene su propio contador naranja y su lista; nunca se mezclan.',
         'El servidor trae mensajes privados y comentarios nuevos cada 10 minutos. Lo que ya respondió alguien desde la app no aparece.',
-        'Cada mensaje viene con una respuesta sugerida: la corregís si hace falta y tocás Enviar. Sale en la próxima pasada del servidor (hasta 10 minutos). Nada se manda solo.',
+        'Cada mensaje viene con una respuesta sugerida: la corregís si hace falta y tocás Enviar. Sale en menos de un minuto. Nada se manda solo.',
         'Precios: nunca en público. En el comentario va "te paso la info por mensaje" y, en el cuadro de abajo, el mensaje privado con el link del producto en www.claudiaadorno.com. Se mandan los dos juntos.',
         'La voz es la de Claudia (firma "Clau"): guía completa en Marketing/redes/voz-respuestas.md. El atelier no se menciona hasta mayo de 2027.',
         '✨ Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (lee el mensaje y la publicación, con la voz de Clau) y la deja como sugerencia. Lo hace una PC de la oficina que tenga Claude instalado; tarda unos minutos. También pasa solo a las 9 y a las 17. Nunca envía nada.',

@@ -263,7 +263,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
         <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)" aria-label="Mejorar respuestas" style="font-size:16px;line-height:1;padding:6px 10px">✨</button>
         <div class="stat" id="m-stat"></div>
       </div>
-      <div class="mini" style="margin:0 0 10px">El servidor trae mensajes y comentarios nuevos cada 10 minutos. Tocá <b>Enviar</b> y la respuesta sale en la próxima pasada (hasta 10 min). Nada se manda solo.</div>
+      <div class="mini" style="margin:0 0 10px">El servidor trae mensajes y comentarios nuevos cada 10 minutos (🔄 para buscar ahora). Tocá <b>Enviar</b> y la respuesta sale en menos de un minuto. Nada se manda solo.</div>
       <div id="m-lista"></div>
     </section>
     <section id="content-pauta" class="tab-content">
@@ -534,7 +534,7 @@ function renderMensajes() {
         ${m.estado === 'pendiente' ? `<textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
           ${m.tipo === 'comentario' ? `<div class="mini" style="margin-top:6px">Mensaje privado a esta persona (opcional · para precios: pegá el link del producto en www.claudiaadorno.com)</div>
           <textarea id="dm-${m.id}" placeholder="Ej: Alejandra, acá tenés las mantas con precio y colores: https://www.claudiaadorno.com/… Clau" style="min-height:44px">${/precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? esc(_nombre(m.autor) + 'acá tenés el producto con precio y colores: https://www.claudiaadorno.com/ . Si querés verlo en persona, está en Alcorta y en Unicenter. Clau') : ''}</textarea>` : ''}
-          <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">Sale en la próxima pasada del servidor (≤10 min)</span></div>`
+          <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">Sale en menos de 1 minuto</span></div>`
         : m.estado === 'para_enviar' ? `<div class="mini">⏳ Por enviar: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>⏳ + privado: "${esc(m.respuesta_dm)}"` : ''}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar envío</button></div>`
         : m.estado === 'enviado' ? `<div class="mini">✓ Enviado ${m.enviado_at ? new Date(m.enviado_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} por ${esc((m.enviado_por || '').split('@')[0])}: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>${m.dm_enviado_at ? '✓' : '⏳'} privado: "${esc(m.respuesta_dm)}"` : ''}</div>`
         : m.estado === 'error' ? `<div class="mini" style="color:var(--red)">✗ No se pudo enviar: ${esc(m.error || '')}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Reintentar</button></div>`
@@ -550,7 +550,11 @@ async function enviarMensaje(id) {
   const dm = (document.getElementById('dm-' + id)?.value || '').trim() || null;
   const { error } = await sb.from('marketing_mensajes').update({ respuesta: t, respuesta_dm: dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', id);
   if (error) { toast('Error: ' + error.message, 'error'); return; }
-  toast('✓ Queda para enviar'); await cargarMensajes(); renderMensajes();
+  // (v13) pedido 'enviar': el servidor la manda en menos de un minuto (si no, igual sale con el cron de 10 min)
+  const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'enviar').in('estado', ['pendiente', 'en_curso']).limit(1);
+  if (!(ab && ab.length)) await sb.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
+  toast('✓ Enviando (menos de 1 minuto)'); await cargarMensajes(); renderMensajes();
+  clearTimeout(window._envTimer); window._envTimer = setTimeout(() => cargarMensajes().then(renderMensajes), 70000);
 }
 async function estadoMensaje(id, estado) {
   const { error } = await sb.from('marketing_mensajes').update({ estado }).eq('id', id);
