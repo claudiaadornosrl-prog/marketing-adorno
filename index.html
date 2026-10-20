@@ -667,6 +667,8 @@ const META_CTA = { atelier: { page: '1237095802824116', biz: '1364792082450561' 
 function _adjuntoHtml(m) {
   if (m.adjunto_url) {
     const u = esc(m.adjunto_url), t = m.adjunto_tipo || 'archivo';
+    if (t === 'historia') return `<div class="adj"><div class="mini">Respondió a tu historia:</div><a href="${u}" target="_blank" rel="noopener" title="Ver grande"><img src="${u}" alt="historia" loading="lazy" style="max-height:160px;max-width:100%;border-radius:8px;border:1px solid var(--border);display:block"></a></div>`;
+    if (t === 'historia_video') return `<div class="adj"><div class="mini">Respondió a tu historia:</div><video controls preload="metadata" src="${u}" style="max-height:200px;max-width:100%;border-radius:8px"></video></div>`;
     if (t === 'imagen' || t === 'sticker') return `<div class="adj"><a href="${u}" target="_blank" rel="noopener" title="Ver grande"><img src="${u}" alt="${t}" loading="lazy" style="max-height:${t === 'sticker' ? 72 : 160}px;max-width:100%;border-radius:8px;border:1px solid var(--border);display:block"></a></div>`;
     if (t === 'audio') return `<div class="adj">🎤 <audio controls preload="none" src="${u}" style="vertical-align:middle;max-width:100%"></audio></div>`;
     if (t === 'video') return `<div class="adj"><video controls preload="metadata" src="${u}" style="max-height:200px;max-width:100%;border-radius:8px"></video></div>`;
@@ -674,7 +676,7 @@ function _adjuntoHtml(m) {
   }
   if (!m.es_multimedia) return '';
   const l = enlaceMensaje(m);
-  return l ? `<a href="${esc(l)}" target="_blank" rel="noopener" title="Abrir en Meta"><i>📎 imagen, sticker o audio (no se pudo copiar por acá)</i></a>` : '<i>📎 imagen, sticker o audio (no se pudo copiar por acá)</i>';
+  return l ? `<a href="${esc(l)}" target="_blank" rel="noopener" title="Abrir en Meta"><i>📎 contenido que Instagram no deja leer por acá (publicación o reel compartido, reacción o nota de voz)</i></a>` : '<i>📎 contenido que Instagram no deja leer por acá (publicación o reel compartido, reacción o nota de voz)</i>';
 }
 function enlaceMensaje(m) {
   if (m.tipo === 'comentario') return m.post_url || null;
