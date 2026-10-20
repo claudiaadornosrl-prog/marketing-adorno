@@ -663,6 +663,19 @@ async function pedirTraer() {
 }
 // (v15) Link directo al mensaje en la bandeja de Meta Business Suite (o al post, si es comentario)
 const META_CTA = { atelier: { page: '1237095802824116', biz: '1364792082450561' }, oficial: { page: '183276558391685', biz: '398992653902545' } };
+// (v21) adjunto del cliente: foto / sticker → miniatura; audio → reproductor; video / archivo → link. Sin copia → texto de antes.
+function _adjuntoHtml(m) {
+  if (m.adjunto_url) {
+    const u = esc(m.adjunto_url), t = m.adjunto_tipo || 'archivo';
+    if (t === 'imagen' || t === 'sticker') return `<div class="adj"><a href="${u}" target="_blank" rel="noopener" title="Ver grande"><img src="${u}" alt="${t}" loading="lazy" style="max-height:${t === 'sticker' ? 72 : 160}px;max-width:100%;border-radius:8px;border:1px solid var(--border);display:block"></a></div>`;
+    if (t === 'audio') return `<div class="adj">🎤 <audio controls preload="none" src="${u}" style="vertical-align:middle;max-width:100%"></audio></div>`;
+    if (t === 'video') return `<div class="adj"><video controls preload="metadata" src="${u}" style="max-height:200px;max-width:100%;border-radius:8px"></video></div>`;
+    return `<div class="adj"><a href="${u}" target="_blank" rel="noopener">📎 ver archivo adjunto ↗</a></div>`;
+  }
+  if (!m.es_multimedia) return '';
+  const l = enlaceMensaje(m);
+  return l ? `<a href="${esc(l)}" target="_blank" rel="noopener" title="Abrir en Meta"><i>📎 imagen, sticker o audio (no se pudo copiar por acá)</i></a>` : '<i>📎 imagen, sticker o audio (no se pudo copiar por acá)</i>';
+}
 function enlaceMensaje(m) {
   if (m.tipo === 'comentario') return m.post_url || null;
   const c = META_CTA[m.cuenta]; if (!c || !m.conversacion_id) return null;
@@ -683,7 +696,7 @@ function renderMensajes() {
         <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${_hace(m.fecha)}${m.tipo === 'dm' && enlaceMensaje(m) ? ` · <a href="${esc(enlaceMensaje(m))}" target="_blank" rel="noopener">abrir en Meta ↗</a>` : ''}${m.autor ? ` · <a href="#" onclick="verHistorial(${m.id});return false;" title="Ver qué escribió antes esta persona y qué le respondimos">historial</a>` : ''}</span></div>
         <div id="hist-${m.id}"></div>
         ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver publicación ↗</a>` : ''}</div>` : ''}
-        <div class="txt">${m.es_multimedia ? (enlaceMensaje(m) ? `<a href="${esc(enlaceMensaje(m))}" target="_blank" rel="noopener" title="Abrir en Meta"><i>📎 imagen, sticker o audio (no se puede leer por acá)</i></a>` : '<i>📎 imagen, sticker o audio (no se puede leer por acá)</i>') : esc(m.texto || '')}</div>
+        <div class="txt">${m.texto ? esc(m.texto) : ''}${_adjuntoHtml(m)}</div>
         ${_repetidos(m)}
         ${m.estado === 'pendiente' ? `<div class="frases">${FRASES.map(f => `<button class="chip-f" onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</button>`).join('')}</div>
           <textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
@@ -874,6 +887,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
 
 </script>
-<script src="manual.js?v=7"></script>
+<script src="manual.js?v=8"></script>
 </body>
 </html>
