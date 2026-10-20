@@ -178,6 +178,11 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .post-thumb { flex: none; width: 170px; align-self: stretch; min-height: 120px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #f1f5f9; }
 .post-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 @media (max-width: 600px) { .post-thumb { width: 96px; min-height: 96px; } }
+.catbox { margin-top: 6px; } .catbox input { width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 13px; }
+.cat-res { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
+.cat-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 8px; cursor: pointer; font-size: 13px; } .cat-item:hover { background: var(--primary-bg); }
+.cat-item img, .cat-noimg { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; background: #f1f5f9; flex: none; }
+.hist { border: 1px dashed var(--border); border-radius: 8px; padding: 6px 8px; margin: 4px 0; font-size: 12.5px; } .hist-it { padding: 4px 0; border-top: 1px solid #f1f5f9; } .hist-r { color: var(--primary); padding-left: 10px; }
 .frases { display: flex; gap: 4px; flex-wrap: wrap; margin: 4px 0; }
 .chip-f { border: 1px solid var(--border); background: #fff; border-radius: 10px; padding: 2px 8px; font-size: 11px; cursor: pointer; font-family: inherit; color: var(--muted); }
 .chip-f:hover { background: var(--primary-bg); color: var(--primary); border-color: var(--primary); }
@@ -208,7 +213,8 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
     <h1><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>Marketing</h1>
     <span class="user-info" id="user-info"></span>
     <nav class="tabs" id="tabs">
-      <button id="tab-tablero" class="active" onclick="switchTab('tablero')" title="Tablero"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span class="lb">Tablero</span></button>
+      <button id="tab-hoy" class="active" onclick="switchTab('hoy')" title="Hoy"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="lb">Hoy</span></button>
+      <button id="tab-tablero" onclick="switchTab('tablero')" title="Tablero"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span class="lb">Tablero</span></button>
       <button id="tab-respuestas" onclick="switchTab('respuestas')" title="Respuestas"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="lb">Respuestas</span><span class="count" id="cnt-respuestas"></span></button>
       <button id="tab-oportunidades" onclick="switchTab('oportunidades')" title="Oportunidades"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="18"/></svg><span class="lb">Oportunidades</span></button>
       <button id="tab-posts" onclick="switchTab('posts')" title="Publicaciones"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="lb">Publicaciones</span></button>
@@ -226,7 +232,11 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
   </header>
   <main>
 
-    <section id="content-tablero" class="tab-content active">
+    <section id="content-hoy" class="tab-content active">
+      <div id="hoy-cards" class="kpis"></div>
+      <div class="card"><h3>Lo que hay que hacer</h3><div id="hoy-lista"></div></div>
+    </section>
+    <section id="content-tablero" class="tab-content">
       <div class="filters">
         <label>Período</label>
         <select id="t-rango" onchange="renderTablero()"><option value="7">Últimos 7 días</option><option value="30" selected>Últimos 30 días</option><option value="90">Últimos 90 días</option></select>
@@ -436,11 +446,11 @@ const ESTADO_CHIP = { idea: 'gray', borrador: 'amber', aprobada: 'green', public
 async function init() {
   document.getElementById('franja-prueba').style.display = 'none';
   await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas(), cargarMensajes(), cargarFrases(), cargarPosts(), cargarDescripciones()]);
-  renderTablero(); renderContenido(); renderTareas(); renderMensajes(); renderOportunidades(); renderPosts(); renderDescripciones();
+  renderTablero(); renderContenido(); renderTareas(); renderMensajes(); renderOportunidades(); renderPosts(); renderDescripciones(); renderHoy();
   setInterval(() => cargarMensajes().then(() => { if (document.getElementById('content-respuestas').classList.contains('active')) renderMensajes(); }), 120000);
   sb.from('marketing_pedidos').select('id').eq('tipo', 'redactar').in('estado', ['pendiente', 'en_curso']).limit(1).then(({ data }) => { if (data && data.length) _vigilarPedido(); });
 }
-function onTab(k) { if (k === 'tablero') renderTablero(); if (k === 'contenido') renderContenido(); if (k === 'web') renderTareas(); if (k === 'respuestas') renderMensajes(); if (k === 'oportunidades') renderOportunidades(); if (k === 'posts') renderPosts(); if (k === 'descripciones') renderDescripciones(); }
+function onTab(k) { if (k === 'hoy') renderHoy(); if (k === 'tablero') renderTablero(); if (k === 'contenido') renderContenido(); if (k === 'web') renderTareas(); if (k === 'respuestas') renderMensajes(); if (k === 'oportunidades') renderOportunidades(); if (k === 'posts') renderPosts(); if (k === 'descripciones') renderDescripciones(); }
 
 // ── Tablero ──
 async function cargarMetricas() {
@@ -517,6 +527,63 @@ async function cargarMensajes() {
   const c = document.getElementById('cnt-respuestas'); if (c) { c.textContent = n ? String(n) : ''; c.title = n ? `${n} sin responder` : ''; }
   for (const k of ['atelier', 'oficial']) { const e = document.getElementById('mc-' + k), x = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === k).length; if (e) e.textContent = x ? String(x) : ''; }
 }
+// ── Hoy: vista de entrada para quien atiende (lote 3) ──
+function _irA(tab, fn) { switchTab(tab); if (fn) fn(); }
+function renderHoy() {
+  const pend = MSG.filter(m => m.estado === 'pendiente'), viejos = pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5);
+  const porC = c => pend.filter(m => m.cuenta === c).length;
+  const dms = pend.filter(m => m.tipo === 'dm').length, precios = pend.filter(m => m.oportunidad).length;
+  const desc = DESC.filter(d => d.estado === 'propuesta').length, descErr = DESC.filter(d => d.estado === 'error').length;
+  const tP = TAR.filter(t => t.estado === 'pendiente'), tAlta = tP.filter(t => t.prioridad === 1).length;
+  const enviadosHoy = MSG.filter(m => m.estado === 'enviado' && m.enviado_at && m.enviado_at.slice(0, 10) === hoyAR()).length;
+  const resumen = TAR.filter(t => (t.referencia || '').startsWith('resumen:')).sort((a, b) => b.id - a.id)[0];
+  document.getElementById('hoy-cards').innerHTML =
+    `<div class="kpi" style="cursor:pointer" onclick="_irA('respuestas')"><div class="l">Sin responder</div><div class="n" style="color:${viejos.length ? 'var(--red)' : 'var(--primary)'}">${pend.length}</div><div class="d">${viejos.length} con más de 2 h · Atelier ${porC('atelier')} · Claudia Adorno ${porC('oficial')}</div></div>`
+    + `<div class="kpi"><div class="l">Respondidos hoy</div><div class="n">${enviadosHoy}</div><div class="d">${dms} privados y ${precios} consultas de precio esperan</div></div>`
+    + `<div class="kpi" style="cursor:pointer" onclick="_irA('descripciones')"><div class="l">Descripciones por aprobar</div><div class="n">${desc}</div><div class="d">${descErr ? descErr + ' con error' : 'para la tienda del atelier'}</div></div>`
+    + `<div class="kpi" style="cursor:pointer" onclick="_irA('web')"><div class="l">Tareas pendientes</div><div class="n">${tP.length}</div><div class="d">${tAlta} de prioridad alta</div></div>`;
+  const items = [];
+  viejos.slice(0, 5).forEach(m => items.push(`<div class="fila"><div class="prio p1"></div><div class="cuerpo"><div class="t">${esc(m.autor || 'desconocido')} espera hace ${_hace(m.fecha).replace('hace ', '')}</div><div class="s">${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'} · ${m.tipo === 'dm' ? 'privado' : 'comentario'} · ${esc(NOM_CUENTA[m.cuenta] || m.cuenta)}: ${esc((m.texto || '📎 multimedia').slice(0, 90))}</div></div><div class="acc"><button class="btn primary" onclick="_irA('respuestas', () => { cuentaMensajes('${m.cuenta}'); setTimeout(() => document.getElementById('msg-${m.id}')?.scrollIntoView({behavior:'smooth'}), 100); })">Responder</button></div></div>`));
+  if (pend.length > viejos.length) items.push(`<div class="fila"><div class="prio p2"></div><div class="cuerpo"><div class="t">${pend.length - viejos.length} mensajes recientes sin responder</div><div class="s">Llegaron hace menos de 2 horas.</div></div><div class="acc"><button class="btn" onclick="_irA('respuestas')">Ver</button></div></div>`);
+  if (desc) items.push(`<div class="fila"><div class="prio p2"></div><div class="cuerpo"><div class="t">${desc} descripciones de productos esperan aprobación</div><div class="s">Claude las redactó con la identidad del atelier; aprobá, corregí o descartá.</div></div><div class="acc"><button class="btn" onclick="_irA('descripciones')">Revisar</button></div></div>`);
+  tP.filter(t => t.prioridad === 1).slice(0, 3).forEach(t => items.push(`<div class="fila"><div class="prio p1"></div><div class="cuerpo"><div class="t">${esc(t.titulo)}</div><div class="s">${esc((t.detalle || '').slice(0, 140))}</div></div><div class="acc"><button class="btn" onclick="_irA('web')">Ver</button></div></div>`));
+  if (resumen) items.push(`<div class="fila"><div class="prio p3"></div><div class="cuerpo"><div class="t">📣 ${esc(resumen.titulo)}</div><div class="s">${esc(resumen.detalle || '')}</div></div></div>`);
+  document.getElementById('hoy-lista').innerHTML = items.length ? items.join('') : '<div class="empty">Todo al día. 🎉</div>';
+}
+
+// ── Catálogo de la tienda (buscar producto para el link de precio) ──
+let CAT = null;
+async function cargarCatalogo() { if (CAT) return; const { data } = await sb.from('marketing_catalogo').select('producto_id, handle, titulo, precio, imagen, url, estado').eq('estado', 'active').order('titulo').limit(3000); CAT = data || []; }
+function _norm(t) { return (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+async function buscarProducto(id, q) {
+  await cargarCatalogo();
+  const box = document.getElementById('cat-' + id); if (!box) return;
+  const n = _norm(q).trim(); if (n.length < 2) { box.innerHTML = ''; return; }
+  const l = CAT.filter(p => _norm(p.titulo).includes(n) || _norm(p.handle).includes(n)).slice(0, 8);
+  box.innerHTML = l.length ? l.map(p => `<div class="cat-item" onclick="elegirProducto(${id}, '${esc(p.handle)}')">${p.imagen ? `<img src="${esc(p.imagen)}" alt="">` : '<span class="cat-noimg"></span>'}<span>${esc(p.titulo)}${p.precio ? ' · ' + plata(p.precio) : ' · sin precio'}</span></div>`).join('') : '<div class="mini" style="padding:4px">Sin resultados en el catálogo.</div>';
+}
+function elegirProducto(id, handle) {
+  const p = CAT.find(x => x.handle === handle); if (!p) return;
+  const dm = document.getElementById('dm-' + id) || document.getElementById('resp-' + id); if (!dm) return;
+  const m = MSG.find(x => x.id === id);
+  // La tienda del atelier todavía tiene contraseña: el link del producto no es público. Hasta el lanzamiento se manda la web actual.
+  const link = TIENDA_PUBLICA ? p.url : 'https://www.claudiaadorno.com/';
+  dm.value = `${_nombre(m?.autor)}acá tenés ${p.titulo}${p.precio ? ' (' + plata(p.precio) + ')' : ''}: ${link} . Si querés verlo en persona, está en Alcorta y en Unicenter.`;
+  document.getElementById('cat-' + id).innerHTML = `<div class="mini">✓ ${esc(p.titulo)}${TIENDA_PUBLICA ? '' : ' · la tienda del atelier aún no es pública: se manda el link de claudiaadorno.com'}</div>`;
+  document.getElementById('catq-' + id).value = '';
+}
+const TIENDA_PUBLICA = false;   // pasar a true cuando se lance atelierclaudiaadorno.com
+
+// ── Historial por persona ──
+async function verHistorial(id) {
+  const m = MSG.find(x => x.id === id); if (!m || !m.autor) return;
+  const box = document.getElementById('hist-' + id); if (!box) return;
+  if (box.innerHTML) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="mini">Buscando…</div>';
+  const { data } = await sb.from('marketing_mensajes').select('id, plataforma, tipo, cuenta, texto, respuesta, estado, fecha, enviado_at').ilike('autor', m.autor).neq('id', id).order('fecha', { ascending: false }).limit(20);
+  box.innerHTML = (data && data.length) ? `<div class="hist"><div class="mini" style="font-weight:600">Lo anterior con ${esc(m.autor)} (${data.length}):</div>` + data.map(h => `<div class="hist-it"><span class="mini">${h.fecha.slice(0, 10).split('-').reverse().join('/')} · ${h.plataforma === 'instagram' ? 'IG' : 'FB'} ${h.tipo === 'dm' ? 'privado' : 'comentario'} · ${esc(NOM_CUENTA[h.cuenta] || h.cuenta)}</span><div>${esc(h.texto || '📎')}</div>${h.respuesta ? `<div class="hist-r">↳ ${esc(h.respuesta)}</div>` : h.estado === 'ignorado' ? '<div class="hist-r mini">↳ (ignorado)</div>' : '<div class="hist-r mini">↳ sin responder</div>'}</div>`).join('') + '</div>' : '<div class="mini">Es la primera vez que escribe.</div>';
+}
+
 // ── Frases guardadas (marketing_frases) ──
 let FRASES = [];
 async function cargarFrases() { const { data } = await sb.from('marketing_frases').select('id, nombre, texto').eq('activa', true).order('orden'); FRASES = data || []; }
@@ -610,7 +677,8 @@ function renderMensajes() {
   document.getElementById('m-lista').innerHTML = l.length ? l.map(m => `<div class="msg ${m.estado === 'pendiente' && (Date.now() - new Date(m.fecha)) > 72e5 ? 'viejo' : ''}" id="msg-${m.id}">
       <div class="red ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma}">${m.plataforma === 'instagram' ? 'IG' : 'FB'}</div>
       <div class="cuerpo">
-        <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${_hace(m.fecha)}${m.tipo === 'dm' && enlaceMensaje(m) ? ` · <a href="${esc(enlaceMensaje(m))}" target="_blank" rel="noopener">abrir en Meta ↗</a>` : ''}</span></div>
+        <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${_hace(m.fecha)}${m.tipo === 'dm' && enlaceMensaje(m) ? ` · <a href="${esc(enlaceMensaje(m))}" target="_blank" rel="noopener">abrir en Meta ↗</a>` : ''}${m.autor ? ` · <a href="#" onclick="verHistorial(${m.id});return false;" title="Ver qué escribió antes esta persona y qué le respondimos">historial</a>` : ''}</span></div>
+        <div id="hist-${m.id}"></div>
         ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver publicación ↗</a>` : ''}</div>` : ''}
         <div class="txt">${m.es_multimedia ? (enlaceMensaje(m) ? `<a href="${esc(enlaceMensaje(m))}" target="_blank" rel="noopener" title="Abrir en Meta"><i>📎 imagen, sticker o audio (no se puede leer por acá)</i></a>` : '<i>📎 imagen, sticker o audio (no se puede leer por acá)</i>') : esc(m.texto || '')}</div>
         ${_repetidos(m)}
@@ -618,6 +686,7 @@ function renderMensajes() {
           <textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
           ${m.tipo === 'comentario' ? `<div class="mini" style="margin-top:6px">Mensaje privado a esta persona (opcional · para precios: pegá el link del producto en www.claudiaadorno.com)</div>
           <textarea id="dm-${m.id}" placeholder="Ej: Alejandra, acá tenés las mantas con precio y colores: https://www.claudiaadorno.com/… Clau" style="min-height:44px">${/precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? esc(_nombre(m.autor) + 'acá tenés el producto con precio y colores: https://www.claudiaadorno.com/ . Si querés verlo en persona, está en Alcorta y en Unicenter. Clau') : ''}</textarea>` : ''}
+          ${m.oportunidad || /precio|cuanto|cuánto|valor|cuesta|price|how much|preço|quanto/i.test(m.texto || '') ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto en el catálogo del atelier…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}
           <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`
         : m.estado === 'para_enviar' ? `<div class="mini">⏳ Por enviar: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>⏳ + privado: "${esc(m.respuesta_dm)}"` : ''}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar envío</button></div>`
         : m.estado === 'enviado' ? `<div class="mini">✓ Enviado ${m.enviado_at ? new Date(m.enviado_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} por ${esc((m.enviado_por || '').split('@')[0])}: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>${m.dm_enviado_at ? '✓' : '⏳'} privado: "${esc(m.respuesta_dm)}"` : ''}</div>`
@@ -802,6 +871,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
 
 </script>
-<script src="manual.js?v=6"></script>
+<script src="manual.js?v=7"></script>
 </body>
 </html>

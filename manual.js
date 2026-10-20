@@ -19,6 +19,15 @@ function _manualSecciones() {
       ],
     },
     {
+      icon: '☀', titulo: 'Hoy',
+      desc: 'La pantalla de entrada: qué hay que hacer ahora, sin recorrer las demás pestañas.',
+      pasos: [
+        'Arriba, cuatro números: mensajes sin responder (rojo si alguno pasó las 2 horas), respondidos hoy, descripciones por aprobar y tareas pendientes. Tocando cada uno vas a la pestaña.',
+        'Abajo, la lista de lo urgente: cada mensaje que espera hace más de 2 horas con su botón Responder, las descripciones, las tareas de prioridad alta y el último resumen semanal.',
+        'El resumen semanal llega también al celular los lunes a las 8.',
+      ],
+    },
+    {
       icon: '📊', titulo: 'Tablero',
       desc: 'Un solo lugar para ver cómo va lo digital: tienda, redes y pauta.',
       pasos: [
@@ -37,6 +46,8 @@ function _manualSecciones() {
         'Cada mensaje viene con una respuesta sugerida: la corregís si hace falta y tocás Enviar. Sale en menos de un minuto. Nada se manda solo.',
         'Precios: nunca en público. En el comentario va "te paso la info por mensaje" y, en el cuadro de abajo, el mensaje privado con el link del producto en www.claudiaadorno.com. Se mandan los dos juntos.',
         'La voz es la de Claudia (firma "Clau"): guía completa en Marketing/redes/voz-respuestas.md. El atelier no se menciona hasta mayo de 2027.',
+        'Consultas de precio: aparece un buscador del catálogo del atelier. Escribís parte del nombre, elegís el producto y el mensaje privado se arma solo con el nombre y el precio. Mientras la tienda del atelier tenga contraseña, el link que se manda es el de claudiaadorno.com.',
+        'Historial: al lado de la fecha, el enlace "historial" muestra qué escribió antes esa persona (en cualquiera de las dos redes) y qué le respondimos.',
         'Frases guardadas: los botoncitos arriba del cuadro (Horarios, Comprar online, WhatsApp…) agregan ese texto a la respuesta con un clic.',
         'Si una publicación tiene varios comentarios sin responder, en el primero aparece "Enviar los N de esta publicación": manda de una vez lo que está escrito en cada cuadro.',
         'Si la misma persona escribió en dos lados (comentario y privado, o Instagram y Facebook), la ficha lo avisa en ámbar para responder una sola vez.',
