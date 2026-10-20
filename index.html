@@ -553,28 +553,45 @@ function renderHoy() {
   document.getElementById('hoy-lista').innerHTML = items.length ? items.join('') : '<div class="empty">Todo al día. 🎉</div>';
 }
 
-// ── Catálogo de la tienda (buscar producto para el link de precio) ──
-let CAT = null;
+// ── Catálogo (buscar producto para el link de precio) ──
+// (v24, 20-oct) Dos catálogos: la WEB OFICIAL www.claudiaadorno.com (rastreada por el VPS: tiene link público real, código
+// Dragonfish y precio) y la tienda del atelier (Shopify, aún con contraseña). El id del producto es el mismo en los dos
+// (handle del atelier termina en -<id>, SKU CA-<id>), así que el atelier se enlaza al link de la web cuando existe.
+let CAT = null, CAT_OF = null;
 async function cargarCatalogo() {   // de a 1000 (tope de PostgREST por pedido)
-  if (CAT) return; CAT = [];
+  if (CAT) return; CAT = []; CAT_OF = [];
   for (let i = 0; i < 5; i++) { const { data } = await sb.from('marketing_catalogo').select('producto_id, handle, titulo, precio, imagen, url, estado, sku').eq('estado', 'active').order('titulo').range(i * 1000, i * 1000 + 999); CAT = CAT.concat(data || []); if (!data || data.length < 1000) break; }
+  for (let i = 0; i < 5; i++) { const { data } = await sb.from('marketing_catalogo_oficial').select('id, categoria, titulo, codigos, precio, imagen, url, detalle').order('titulo').range(i * 1000, i * 1000 + 999); CAT_OF = CAT_OF.concat(data || []); if (!data || data.length < 1000) break; }
+  const porId = new Map(CAT_OF.map(p => [String(p.id), p]));
+  CAT.forEach(p => { const id = ((p.handle || '').match(/-(\d+)$/) || [])[1]; p.oficial = id ? porId.get(id) : null; });
 }
-function _norm(t) { return (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+function _norm(t) { return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 async function buscarProducto(id, q) {
   await cargarCatalogo();
   const box = document.getElementById('cat-' + id); if (!box) return;
   const n = _norm(q).trim(); if (n.length < 2) { box.innerHTML = ''; return; }
-  const l = CAT.filter(p => _norm(p.titulo).includes(n) || _norm(p.handle).includes(n) || _norm(p.sku).includes(n)).slice(0, 8);   // (v23) también por SKU
-  box.innerHTML = l.length ? l.map(p => `<div class="cat-item" onclick="elegirProducto(${id}, '${esc(p.handle)}')">${p.imagen ? `<img src="${esc(p.imagen)}" alt="">` : '<span class="cat-noimg"></span>'}<span>${esc(p.titulo)}${p.precio ? ' · ' + plata(p.precio) : ' · sin precio'}${p.sku ? ` <span class="mini">· ${esc(p.sku.split(' ')[0])}${p.sku.includes(' ') ? '…' : ''}</span>` : ''}</span></div>`).join('') : '<div class="mini" style="padding:4px">Sin resultados en el catálogo.</div>';
+  // web oficial primero (tiene link); después los del atelier que no están en la web
+  const of = CAT_OF.filter(p => _norm(p.titulo).includes(n) || _norm(p.codigos).includes(n) || String(p.id) === n || _norm(p.categoria).includes(n)).slice(0, 8)
+    .map(p => ({ key: 'of:' + p.id, titulo: p.titulo, precio: p.precio, imagen: p.imagen, sub: [p.categoria, p.codigos].filter(Boolean).join(' · '), tag: 'web' }));
+  const at = CAT.filter(p => !p.oficial && (_norm(p.titulo).includes(n) || _norm(p.handle).includes(n) || _norm(p.sku).includes(n))).slice(0, Math.max(0, 8 - of.length))
+    .map(p => ({ key: 'at:' + p.handle, titulo: p.titulo, precio: p.precio, imagen: p.imagen, sub: p.sku || '', tag: 'atelier' }));
+  const l = of.concat(at);
+  box.innerHTML = l.length ? l.map(p => `<div class="cat-item" onclick="elegirProducto(${id}, '${esc(p.key)}')">${p.imagen ? `<img src="${esc(p.imagen)}" alt="">` : '<span class="cat-noimg"></span>'}<span>${esc(p.titulo)}${p.precio ? ' · ' + plata(p.precio) : ' · sin precio'}${p.sub ? ` <span class="mini">· ${esc(p.sub)}</span>` : ''} <span class="mini" title="${p.tag === 'web' ? 'Está en www.claudiaadorno.com: se manda el link del producto' : 'Solo en la tienda del atelier (aún con contraseña): se manda la portada de la web'}">${p.tag === 'web' ? '🌐' : '🔒'}</span></span></div>`).join('') : '<div class="mini" style="padding:4px">Sin resultados en los catálogos.</div>';
 }
-function elegirProducto(id, handle) {
-  const p = CAT.find(x => x.handle === handle); if (!p) return;
+function elegirProducto(id, key) {
+  let p, link, nota;
+  if (key.startsWith('of:')) {
+    const o = CAT_OF.find(x => String(x.id) === key.slice(3)); if (!o) return;
+    p = o; link = o.url; nota = '✓ ' + o.titulo + ' · link de www.claudiaadorno.com';
+  } else {
+    const a = CAT.find(x => x.handle === key.slice(3)); if (!a) return;
+    p = a; link = a.oficial ? a.oficial.url : (TIENDA_PUBLICA ? a.url : 'https://www.claudiaadorno.com/');
+    nota = '✓ ' + a.titulo + (a.oficial ? ' · link de www.claudiaadorno.com' : TIENDA_PUBLICA ? '' : ' · no está en la web oficial y la tienda del atelier aún no es pública: va la portada');
+  }
   const dm = document.getElementById('dm-' + id) || document.getElementById('resp-' + id); if (!dm) return;
   const m = MSG.find(x => x.id === id);
-  // La tienda del atelier todavía tiene contraseña: el link del producto no es público. Hasta el lanzamiento se manda la web actual.
-  const link = TIENDA_PUBLICA ? p.url : 'https://www.claudiaadorno.com/';
   dm.value = `${_nombre(m?.autor) || 'Hola, '}¡gracias por preguntar! Te paso el link de ${p.titulo}${p.precio ? ' (' + plata(p.precio) + ')' : ''} con las medidas y los colores disponibles: ${link}\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊`;
-  document.getElementById('cat-' + id).innerHTML = `<div class="mini">✓ ${esc(p.titulo)}${TIENDA_PUBLICA ? '' : ' · la tienda del atelier aún no es pública: se manda el link de claudiaadorno.com'}</div>`;
+  document.getElementById('cat-' + id).innerHTML = `<div class="mini">${esc(nota)}</div>`;
   document.getElementById('catq-' + id).value = '';
 }
 const TIENDA_PUBLICA = false;   // pasar a true cuando se lance atelierclaudiaadorno.com
@@ -707,7 +724,7 @@ function renderMensajes() {
           <textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
           ${m.tipo === 'comentario' ? `<div class="mini" style="margin-top:6px">Mensaje privado a esta persona (opcional · para precios: pegá el link del producto en www.claudiaadorno.com)</div>
           <textarea id="dm-${m.id}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores: https://www.claudiaadorno.com/ …" style="min-height:44px">${/precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? esc((_nombre(m.autor) || 'Hola, ') + '¡gracias por preguntar! Te paso el link para que veas el producto con el precio, las medidas y los colores disponibles: https://www.claudiaadorno.com/\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊') : ''}</textarea>` : ''}
-          ${m.oportunidad || /precio|cuanto|cuánto|valor|cuesta|price|how much|preço|quanto/i.test(m.texto || '') ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar por nombre o SKU en el catálogo del atelier…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}
+          ${m.oportunidad || /precio|cuanto|cuánto|valor|cuesta|price|how much|preço|quanto/i.test(m.texto || '') ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar por nombre, código o SKU (web oficial y atelier)…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}
           <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button>${m.tipo === 'comentario' ? `<button class="btn ${m.ofensivo ? 'ocultar-sug' : ''}" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`
         : m.estado === 'ocultar' ? `<div class="mini">⏳ Se oculta en menos de 1 minuto</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar</button></div>`
         : m.estado === 'oculto' ? `<div class="mini">🙈 Oculto ${m.oculto_at ? new Date(m.oculto_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} (solo lo ve quien lo escribió)</div>`
@@ -902,6 +919,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
 
 </script>
-<script src="manual.js?v=10"></script>
+<script src="manual.js?v=11"></script>
 </body>
 </html>
