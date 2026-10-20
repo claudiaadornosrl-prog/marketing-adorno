@@ -175,6 +175,8 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .msg textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; min-height: 54px; }
 .msg .acc { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
 .msg.viejo { border-left: 4px solid var(--amber); }
+.msg .ofensivo { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; padding: 5px 8px; font-size: 12px; margin: 4px 0 6px; }
+.btn.ocultar-sug { background: #fee2e2; border-color: #fca5a5; color: #991b1b; font-weight: 600; }
 .post-thumb { flex: none; width: 170px; align-self: stretch; min-height: 120px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #f1f5f9; }
 .post-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 @media (max-width: 600px) { .post-thumb { width: 96px; min-height: 96px; } }
@@ -274,7 +276,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
         <div class="subtabs"><button id="mt-atelier" class="active" onclick="cuentaMensajes('atelier')">Atelier <span class="count" id="mc-atelier"></span></button><button id="mt-oficial" onclick="cuentaMensajes('oficial')">Claudia Adorno <span class="count" id="mc-oficial"></span></button></div>
         <label>Red</label><select id="m-red" onchange="renderMensajes()"><option value="">IG + FB</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select>
         <label>Tipo</label><select id="m-tipo" onchange="renderMensajes()"><option value="">Todo</option><option value="dm">Mensajes privados</option><option value="comentario">Comentarios</option></select>
-        <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option></select>
+        <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option><option value="oculto">Ocultados</option></select>
         <button class="btn" id="btn-traer" onclick="pedirTraer()" title="Buscar ahora: el servidor va a Instagram y Facebook a traer mensajes y comentarios nuevos (si no, lo hace solo cada 10 min)" aria-label="Buscar mensajes nuevos">🔄</button>
         <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)" aria-label="Mejorar respuestas" style="font-size:16px;line-height:1;padding:6px 10px">✨</button>
         <div class="stat" id="m-stat"></div>
@@ -700,12 +702,15 @@ function renderMensajes() {
         ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver publicación ↗</a>` : ''}</div>` : ''}
         <div class="txt">${m.texto ? esc(m.texto) : ''}${_adjuntoHtml(m)}</div>
         ${_repetidos(m)}
+        ${m.ofensivo && m.estado === 'pendiente' ? `<div class="ofensivo">⚠ Parece ofensivo o spam. Sugerimos 🙈 ocultarlo en vez de responder (la persona no se entera).</div>` : ''}
         ${m.estado === 'pendiente' ? `<div class="frases">${FRASES.map(f => `<button class="chip-f" onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</button>`).join('')}</div>
           <textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea>
           ${m.tipo === 'comentario' ? `<div class="mini" style="margin-top:6px">Mensaje privado a esta persona (opcional · para precios: pegá el link del producto en www.claudiaadorno.com)</div>
           <textarea id="dm-${m.id}" placeholder="Ej: Alejandra, acá tenés las mantas con precio y colores: https://www.claudiaadorno.com/… Clau" style="min-height:44px">${/precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? esc(_nombre(m.autor) + 'acá tenés el producto con precio y colores: https://www.claudiaadorno.com/ . Si querés verlo en persona, está en Alcorta y en Unicenter. Clau') : ''}</textarea>` : ''}
           ${m.oportunidad || /precio|cuanto|cuánto|valor|cuesta|price|how much|preço|quanto/i.test(m.texto || '') ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto en el catálogo del atelier…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}
-          <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`
+          <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button>${m.tipo === 'comentario' ? `<button class="btn ${m.ofensivo ? 'ocultar-sug' : ''}" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`
+        : m.estado === 'ocultar' ? `<div class="mini">⏳ Se oculta en menos de 1 minuto</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar</button></div>`
+        : m.estado === 'oculto' ? `<div class="mini">🙈 Oculto ${m.oculto_at ? new Date(m.oculto_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} (solo lo ve quien lo escribió)</div>`
         : m.estado === 'para_enviar' ? `<div class="mini">⏳ Por enviar: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>⏳ + privado: "${esc(m.respuesta_dm)}"` : ''}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar envío</button></div>`
         : m.estado === 'enviado' ? `<div class="mini">✓ Enviado ${m.enviado_at ? new Date(m.enviado_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} por ${esc((m.enviado_por || '').split('@')[0])}: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>${m.dm_enviado_at ? '✓' : '⏳'} privado: "${esc(m.respuesta_dm)}"` : ''}</div>`
         : m.estado === 'error' ? `<div class="mini" style="color:var(--red)">✗ No se pudo enviar: ${esc(m.error || '')}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Reintentar</button></div>`
@@ -726,6 +731,14 @@ async function enviarMensaje(id) {
   if (!(ab && ab.length)) await sb.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
   toast('✓ Enviando (menos de 1 minuto)'); await cargarMensajes(); renderMensajes();
   clearTimeout(window._envTimer); window._envTimer = setTimeout(() => cargarMensajes().then(renderMensajes), 70000);
+}
+async function ocultarComentario(id) {
+  const m = MSG.find(x => x.id === id); if (!m) return;
+  if (!confirm(`¿Ocultar este comentario de ${m.autor || 'desconocido'}?\n\n"${(m.texto || '').slice(0, 120)}"\n\nEn ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'} lo deja de ver todo el mundo menos quien lo escribió. Se puede volver a mostrar desde Meta.`)) return;
+  await estadoMensaje(id, 'ocultar');
+  const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'enviar').in('estado', ['pendiente', 'en_curso']).limit(1);
+  if (!(ab && ab.length)) await sb.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
+  toast('🙈 Se oculta en menos de 1 minuto');
 }
 async function estadoMensaje(id, estado) {
   const { error } = await sb.from('marketing_mensajes').update({ estado }).eq('id', id);
@@ -889,6 +902,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
 
 </script>
-<script src="manual.js?v=8"></script>
+<script src="manual.js?v=9"></script>
 </body>
 </html>

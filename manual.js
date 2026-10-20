@@ -48,6 +48,7 @@ function _manualSecciones() {
         'La voz es la de Claudia (firma "Clau"): guía completa en Marketing/redes/voz-respuestas.md. El atelier no se menciona hasta mayo de 2027.',
         'Consultas de precio: aparece un buscador del catálogo del atelier. Escribís parte del nombre, elegís el producto y el mensaje privado se arma solo con el nombre y el precio. Mientras la tienda del atelier tenga contraseña, el link que se manda es el de claudiaadorno.com.',
         'Fotos, stickers y audios: si el cliente mandó una foto, se ve la miniatura en el mensaje (clic para verla grande); los audios tienen reproductor y los videos se abren ahí mismo. Antes solo decía 📎 y había que ir a Meta.',
+        'Comentarios ofensivos o spam: el botón 🙈 Ocultar los esconde en Instagram o Facebook (todos dejan de verlo menos quien lo escribió, que no se entera). Cuando el sistema detecta insultos o estafas, lo avisa en rojo y sugiere ocultarlo en vez de responder. Los ocultados se ven en el filtro "Ocultados".',
         'Historial: al lado de la fecha, el enlace "historial" muestra qué escribió antes esa persona (en cualquiera de las dos redes) y qué le respondimos.',
         'Frases guardadas: los botoncitos arriba del cuadro (Horarios, Comprar online, WhatsApp…) agregan ese texto a la respuesta con un clic.',
         'Si una publicación tiene varios comentarios sin responder, en el primero aparece "Enviar los N de esta publicación": manda de una vez lo que está escrito en cada cuadro.',
