@@ -175,6 +175,8 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .msg textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; min-height: 54px; }
 .msg .acc { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
 .msg.viejo { border-left: 4px solid var(--amber); }
+@keyframes reloj-gira { 0%, 70% { transform: rotate(0deg); } 85% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
+.reloj { display: inline-block; animation: reloj-gira 1.6s ease-in-out infinite; }
 .msg .ofensivo { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; padding: 5px 8px; font-size: 12px; margin: 4px 0 6px; }
 .btn.ocultar-sug { background: #fee2e2; border-color: #fca5a5; color: #991b1b; font-weight: 600; }
 .post-thumb { flex: none; width: 170px; align-self: stretch; min-height: 120px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #f1f5f9; }
@@ -650,13 +652,13 @@ async function pedirRedaccion() {
 }
 function _vigilarPedido() {
   const b = document.getElementById('btn-mejorar'); if (!b) return;
-  b.disabled = true; b.textContent = '⏳'; b.title = 'Redactando…';
+  b.disabled = true; b.innerHTML = _reloj(); b.title = 'Redactando…';
   clearInterval(window._pedTimer);
   window._pedTimer = setInterval(async () => {
     const { data } = await sb.from('marketing_pedidos').select('id, estado, resultado, tomado_por').eq('tipo', 'redactar').order('id', { ascending: false }).limit(1);
     const p = data && data[0]; if (!p) return;
-    if (p.estado === 'pendiente') { b.textContent = '⏳'; b.title = 'Esperando una PC con Claude…'; return; }
-    if (p.estado === 'en_curso') { b.textContent = '⏳'; b.title = 'Redactando en ' + (p.tomado_por || '…'); return; }
+    if (p.estado === 'pendiente') { b.innerHTML = _reloj(); b.title = 'Esperando una PC con Claude…'; return; }
+    if (p.estado === 'en_curso') { b.innerHTML = _reloj(); b.title = 'Redactando en ' + (p.tomado_por || '…'); return; }
     clearInterval(window._pedTimer); b.disabled = false; b.textContent = '✨'; b.title = 'Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)';
     toast(p.estado === 'hecho' ? '✓ Listo: ' + (p.resultado || '') : '✗ ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
     await cargarMensajes(); renderMensajes();
@@ -670,7 +672,7 @@ async function pedirTraer() {
     const { error } = await sb.from('marketing_pedidos').insert({ tipo: 'traer', pedido_por: session.email });
     if (error) { toast('Error: ' + error.message, 'error'); return; }
   }
-  b.disabled = true; b.textContent = '⏳'; b.title = 'Buscando mensajes nuevos en Instagram y Facebook…';
+  b.disabled = true; b.innerHTML = _reloj(); b.title = 'Buscando mensajes nuevos en Instagram y Facebook…';
   clearInterval(window._traerTimer);
   window._traerTimer = setInterval(async () => {
     const { data } = await sb.from('marketing_pedidos').select('estado, resultado').eq('tipo', 'traer').order('id', { ascending: false }).limit(1);
@@ -824,16 +826,18 @@ async function estadoDesc(id, estado) {
 }
 async function pedirDescripciones() { await _pedidoGenerico('descripciones', 'btn-desc', '✨ Redactar 30 más', () => cargarDescripciones().then(renderDescripciones)); }
 async function pedirAplicar() { await _pedidoGenerico('aplicar_descripciones', 'btn-aplicar', '⬆ Subir aprobadas', () => cargarDescripciones().then(renderDescripciones)); }
+// (v25, JP) reloj de arena animado mientras un botón espera al servidor o a la PC con Claude
+function _reloj(txt) { return '<span class="reloj">⏳</span>' + (txt ? ' ' + esc(txt) : ''); }
 async function _pedidoGenerico(tipo, btnId, label, alTerminar) {
   const b = document.getElementById(btnId);
   const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', tipo).in('estado', ['pendiente', 'en_curso']).limit(1);
   if (!(ab && ab.length)) { const { error } = await sb.from('marketing_pedidos').insert({ tipo, pedido_por: session.email }); if (error) { toast('Error: ' + error.message, 'error'); return; } }
-  b.disabled = true; b.textContent = '⏳ Trabajando…';
+  b.disabled = true; b.innerHTML = _reloj('Trabajando…');
   const timer = setInterval(async () => {
     const { data } = await sb.from('marketing_pedidos').select('estado, resultado, tomado_por').eq('tipo', tipo).order('id', { ascending: false }).limit(1);
     const p = data && data[0]; if (!p) return;
-    if (p.estado === 'pendiente') { b.textContent = '⏳ Esperando…'; return; }
-    if (p.estado === 'en_curso') { b.textContent = '⏳ ' + (p.tomado_por || '…'); return; }
+    if (p.estado === 'pendiente') { b.innerHTML = _reloj('Esperando…'); return; }
+    if (p.estado === 'en_curso') { b.innerHTML = _reloj(p.tomado_por || '…'); return; }
     clearInterval(timer); b.disabled = false; b.textContent = label;
     toast(p.estado === 'hecho' ? '✓ ' + (p.resultado || 'listo') : '✗ ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
     alTerminar();
