@@ -553,7 +553,10 @@ function renderHoy() {
 
 // ── Catálogo de la tienda (buscar producto para el link de precio) ──
 let CAT = null;
-async function cargarCatalogo() { if (CAT) return; const { data } = await sb.from('marketing_catalogo').select('producto_id, handle, titulo, precio, imagen, url, estado').eq('estado', 'active').order('titulo').limit(3000); CAT = data || []; }
+async function cargarCatalogo() {   // de a 1000 (tope de PostgREST por pedido)
+  if (CAT) return; CAT = [];
+  for (let i = 0; i < 5; i++) { const { data } = await sb.from('marketing_catalogo').select('producto_id, handle, titulo, precio, imagen, url, estado').eq('estado', 'active').order('titulo').range(i * 1000, i * 1000 + 999); CAT = CAT.concat(data || []); if (!data || data.length < 1000) break; }
+}
 function _norm(t) { return (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
 async function buscarProducto(id, q) {
   await cargarCatalogo();
