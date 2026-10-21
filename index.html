@@ -237,7 +237,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 }
 /* (v29, JP) escritorio ancho: los privados van de a dos por fila (son tarjetas chicas); los comentarios, con su casilla de privado, a todo el ancho */
 @media (min-width: 1000px) {
-  .dm-run { column-count: 2; column-gap: 14px; margin-bottom: 14px; } .dm-run.uno { column-count: 1; }
+  .dm-run { column-count: 2; column-gap: 14px; margin-bottom: 14px; }   /* (v36) un privado suelto también va a media pantalla, para que todas las fichas de privados midan igual */
   .dm-run .card { break-inside: avoid; display: inline-block; width: 100%; vertical-align: top; margin-bottom: 14px; }
   .dm-run .card:last-child { margin-bottom: 0; }
   .card.dm textarea { min-height: 88px; } .card.dm .c-cliente { padding: 10px 12px; } .card.dm .c-resp { padding: 10px 12px 12px; }
