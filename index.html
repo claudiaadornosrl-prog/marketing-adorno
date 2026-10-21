@@ -201,7 +201,17 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .sugerido { background: var(--primary-bg); color: var(--primary-dark); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: none; letter-spacing: 0; }
 .sugerido.base { background: #f1f5f9; color: #334155; }
 .tag.repe { background: var(--amber-bg); color: #92400e; cursor: pointer; }
-.c-foot .btn.ico, .c-foot .btn.primary.ico { font-size: 20px !important; line-height: 1 !important; height: auto !important; padding: 8px 16px !important; min-width: 52px; border-radius: 10px; } .c-foot .btn.primary.ico { padding: 8px 22px !important; }
+/* (v32, JP) botones del pie sin recuadro: solo el ícono; Enviar más grande. Hover con fondo suave */
+.c-foot .btn.ico, .c-foot .btn.primary.ico { background: transparent !important; border: none !important; color: inherit !important; font-size: 22px !important; line-height: 1 !important; height: auto !important; padding: 6px 10px !important; border-radius: 10px; cursor: pointer; }
+.c-foot .btn.primary.ico { font-size: 28px !important; padding: 4px 12px !important; } .c-foot .btn.ico:hover { background: #f1f5f9 !important; } .c-foot .btn.primary.ico:hover { background: var(--primary-bg) !important; }
+.c-foot .btn.primary.peligro.ico:hover { background: var(--red-bg) !important; }
+/* cabecera de la pestaña: 🔄 y ✨ también sin recuadro */
+#btn-traer, #btn-mejorar { background: transparent !important; border: none !important; color: inherit !important; font-size: 20px !important; padding: 4px 8px !important; border-radius: 10px; } #btn-traer:hover, #btn-mejorar:hover { background: #f1f5f9 !important; }
+/* (v32) Opción B elegida por JP: fondo gris de la pestaña y cabecera de cada tarjeta teñida con el color de la red */
+#content-respuestas { background: #f3f4f6; margin: -16px -16px 0; padding: 16px; border-radius: 0; }
+.card { border-color: #d9dee6; } .card.ig .c-head { background: linear-gradient(90deg, #fdf2f8, #fff7ed); border-bottom: 2px solid #f0abfc; } .card.fb .c-head { background: #eff6ff; border-bottom: 2px solid #93c5fd; }
+.card.urgente .c-head { border-bottom-color: #f59e0b; } .card.ofensiva .c-head { border-bottom-color: #fca5a5; }
+.c-cliente { border-bottom: 1px solid #eef1f5; } .c-foot { background: #f8fafc; border-top: 1px solid #e5e9ef; }
 .c-resp .frases-btn { font-size: 16px; padding: 2px 8px; }
 .c-resp .frases .chip-f { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px 3px 10px; } .c-resp .frases .chip-f > span { cursor: pointer; } .c-resp .frases .chip-f i { font-style: normal; font-size: 11px; opacity: .55; cursor: pointer; padding: 0 2px; } .c-resp .frases .chip-f i:hover { opacity: 1; }
 .c-resp .frases .chip-f.nueva { border-style: dashed; color: var(--primary); cursor: pointer; }
@@ -220,7 +230,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
   .c-resp .dos { grid-template-columns: 1fr; } .card textarea { min-height: 96px; }
   .c-cliente .post { width: 64px; height: 64px; }
   .c-foot { position: sticky; bottom: 0; box-shadow: 0 -4px 12px rgba(0,0,0,.06); z-index: 2; } .c-foot .btn.primary { flex: 1; } .c-foot > .mini { display: none; }
-  .c-foot .btn.ico { padding: 10px 14px !important; font-size: 22px !important; }
+  .c-foot .btn.ico { padding: 8px 12px !important; font-size: 24px !important; } .c-foot .btn.primary.ico { font-size: 30px !important; flex: 0 0 auto; }
 }
 /* (v29, JP) escritorio ancho: los privados van de a dos por fila (son tarjetas chicas); los comentarios, con su casilla de privado, a todo el ancho */
 @media (min-width: 1000px) {
@@ -865,7 +875,7 @@ function _tarjetaMensaje(m, l) {
       : `<button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Volver a pendientes</button>`;
     pie = `<div class="c-foot estado">${estado}</div>`;
   }
-  return `<div class="card ${esCom ? 'com' : 'dm'} ${viejo ? 'urgente' : ''} ${ofens ? 'ofensiva' : ''}" id="msg-${m.id}">${cabecera}${cliente}${respuesta}${pie}</div>`;
+  return `<div class="card ${esCom ? 'com' : 'dm'} ${m.plataforma === 'instagram' ? 'ig' : 'fb'} ${viejo ? 'urgente' : ''} ${ofens ? 'ofensiva' : ''}" id="msg-${m.id}">${cabecera}${cliente}${respuesta}${pie}</div>`;
 }
 function _nombre(a) { a = (a || '').trim(); return (a.includes(' ') && !a.includes('.') && !a.includes('_')) ? a.split(' ')[0] + ', ' : ''; }
 async function enviarMensaje(id) {
