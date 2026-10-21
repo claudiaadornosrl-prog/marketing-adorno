@@ -199,6 +199,8 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .c-resp .titulo { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .c-resp .titulo .mini { text-transform: none; letter-spacing: 0; font-weight: 400; }
 .sugerido { background: var(--primary-bg); color: var(--primary-dark); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.sugerido.base { background: #f1f5f9; color: #334155; }
+.c-resp .frases { display: none; } .c-resp .frases.abierto { display: flex; } .c-resp .frases-btn { margin-left: auto; font-weight: 600; text-transform: none; letter-spacing: 0; padding: 4px 10px; } .c-resp .frases-btn.on { background: var(--primary-bg); color: var(--primary); }
 .c-resp .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .caja label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
 .card textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 14px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; min-height: 120px; resize: vertical; line-height: 1.4; }
@@ -784,10 +786,11 @@ function _tarjetaMensaje(m, l) {
   let respuesta = '', pie = '';
   if (esPend) {
     respuesta = `<div class="c-resp">
-      <div class="titulo">Tu respuesta ${m.respuesta_sugerida ? '<span class="sugerido" title="Texto redactado por el sistema en la voz de Clau: revisalo y corregí lo que quieras">✨ sugerida por Clau</span>' : '<span class="mini">(todavía sin sugerencia: escribila o tocá ✨ arriba)</span>'}</div>
+      <div class="titulo">Tu respuesta ${m.respuesta_sugerida ? (m.sugerencia_origen === 'claude' ? '<span class="sugerido" title="La redactó Claude en la voz de Clau (botón ✨ Mejorar respuestas): revisala y corregí lo que quieras">✨ redactada por Claude</span>' : '<span class="sugerido base" title="Sugerencia básica armada por el sistema. Tocá ✨ arriba para que Claude la redacte a medida">📋 sugerencia básica</span>') : '<span class="mini">(sin sugerencia: escribila o tocá ✨ arriba)</span>'}
+        <button class="btn ghost frases-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('abierto');this.classList.toggle('on')" title="Frases listas para pegar en la respuesta (horarios, WhatsApp, comprar online…)">⚡ Frases rápidas ▾</button></div>
       <div class="frases">${FRASES.map(f => `<button class="chip-f" onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</button>`).join('')}</div>
       <div class="${esCom ? 'dos' : ''}">
-        <div class="caja"><label>${esCom ? 'Pública, en el comentario' : 'Respuesta'}</label><textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea></div>
+        <div class="caja">${esCom ? '<label>Pública, en el comentario</label>' : ''}<textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea></div>
         ${esCom ? `<div class="caja"><label>Privada, con el link del producto <span class="mini">(opcional)</span></label><textarea id="dm-${m.id}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores…">${esc(dmDefault)}</textarea></div>` : ''}
       </div>
     </div>`;
