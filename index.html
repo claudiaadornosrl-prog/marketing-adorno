@@ -227,7 +227,10 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .c-foot { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid #f1f5f9; background: #fff; flex-wrap: wrap; }
 .c-foot .btn.primary { padding: 10px 22px; font-size: 14px; font-weight: 700; border-radius: 10px; } .c-foot .btn.primary.peligro { background: var(--red); border-color: var(--red); }
 .c-foot > .mini { margin-left: auto; }
-.c-foot .catbox { flex: 1; min-width: 220px; margin: 0; position: relative; } .c-foot .catbox input { padding: 9px 12px; border-radius: 10px; }
+.c-foot .acciones { display: flex; align-items: center; gap: 8px; flex: 1; flex-wrap: wrap; } .c-foot .acciones > .mini { margin-left: auto; }
+/* (v37, JP) con pregunta de precio: botones a la izquierda y el buscador debajo de la casilla del privado, en la misma fila */
+.c-foot.con-buscador { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center; }
+.c-foot .catbox { min-width: 220px; margin: 0; position: relative; } .c-foot .catbox input { padding: 9px 12px; border-radius: 10px; }
 .c-foot .cat-res:not(:empty) { position: absolute; left: 0; right: 0; bottom: calc(100% + 4px); background: #fff; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 4px; z-index: 5; max-height: 280px; overflow: auto; } .c-foot.estado { background: #fafafa; } .enviado-txt { font-size: 13px; line-height: 1.45; flex: 1; min-width: 200px; white-space: pre-wrap; }
 @media (max-width: 760px) {
   .c-resp .dos { grid-template-columns: 1fr; } .card textarea { min-height: 96px; }
@@ -241,7 +244,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
   .dm-run .card { break-inside: avoid; display: inline-block; width: 100%; vertical-align: top; margin-bottom: 14px; }
   .dm-run .card:last-child { margin-bottom: 0; }
   .card.dm textarea { min-height: 88px; } .card.dm .c-cliente { padding: 10px 12px; } .card.dm .c-resp { padding: 10px 12px 12px; }
-  .c-foot .catbox { order: -1; width: 100%; flex: none; }
+  .c-foot.con-buscador { grid-template-columns: 1fr; } .c-foot .catbox { order: -1; width: 100%; }
 }
 @keyframes reloj-gira { 0%, 70% { transform: rotate(0deg); } 85% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
 .reloj { display: inline-block; animation: reloj-gira 1.6s ease-in-out infinite; }
@@ -877,7 +880,7 @@ function _tarjetaMensaje(m, l) {
     </div>`;
     pie = ofens
       ? `<div class="c-foot"><button class="btn primary peligro ico" onclick="ocultarComentario(${m.id})" title="Ocultar: lo esconde en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}. La persona lo sigue viendo, el resto no." aria-label="Ocultar">🙈</button><button class="btn ico" onclick="enviarMensaje(${m.id})" title="Responder igual: manda la respuesta escrita" aria-label="Responder igual">${_icoEnviar()}</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: lo saca de la bandeja sin responder" aria-label="Ignorar">🚫</button><span class="mini">Sugerimos ocultarlo: la persona no se entera</span></div>`
-      : `<div class="c-foot"><button class="btn primary ico" onclick="enviarMensaje(${m.id})" title="Enviar: manda la respuesta (y el privado, si lo escribiste). Sale en menos de 1 minuto." aria-label="Enviar">${_icoEnviar()}</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: lo saca de la bandeja sin responder (queda en Ignorados)" aria-label="Ignorar">🚫</button>${esCom ? `<button class="btn ico" onclick="ocultarComentario(${m.id})" title="Ocultar: lo esconde en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}. La persona lo sigue viendo, el resto no." aria-label="Ocultar">🙈</button>` : ''}${esCom && precio ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`;
+      : `<div class="c-foot ${esCom && precio ? 'con-buscador' : ''}"><div class="acciones"><button class="btn primary ico" onclick="enviarMensaje(${m.id})" title="Enviar: manda la respuesta (y el privado, si lo escribiste). Sale en menos de 1 minuto." aria-label="Enviar">${_icoEnviar()}</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: lo saca de la bandeja sin responder (queda en Ignorados)" aria-label="Ignorar">🚫</button>${esCom ? `<button class="btn ico" onclick="ocultarComentario(${m.id})" title="Ocultar: lo esconde en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}. La persona lo sigue viendo, el resto no." aria-label="Ocultar">🙈</button>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>${esCom && precio ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}</div>`;
   } else {
     const estado = m.estado === 'ocultar' ? `<span class="tag tipo">⏳ Se oculta en menos de 1 minuto</span> <button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar</button>`
       : m.estado === 'oculto' ? `<span class="tag tipo">🙈 Oculto ${fechaCorta(m.oculto_at)} · solo lo ve quien lo escribió</span>`
