@@ -194,6 +194,9 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .burbuja .adj { margin-top: 6px; } .burbuja .adj .mini { margin-bottom: 2px; }
 .c-cliente .post { width: 84px; height: 84px; border-radius: 10px; overflow: hidden; flex: none; border: 1px solid var(--border); background: #f1f5f9; display: block; }
 .c-cliente .post img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.c-cliente .post { cursor: pointer; position: relative; } .c-cliente .post .play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; text-shadow: 0 1px 4px rgba(0,0,0,.6); background: rgba(0,0,0,.18); }
+.media-big:not(:empty) { padding: 0 14px 12px; background: #fafafa; } .media-wrap { background: #000; border-radius: 10px; overflow: hidden; } .media-wrap video, .media-wrap img { display: block; max-height: 480px; width: 100%; object-fit: contain; background: #000; }
+.media-wrap .media-acc { background: #fff; padding: 6px 10px; } .media-wrap .media-acc a { color: var(--primary); }
 .card .hist { margin: 8px 14px 0; } .card > .mini { margin: 6px 14px 0; }
 .c-resp { padding: 12px 14px 14px; }
 .c-resp .titulo { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -724,6 +727,17 @@ function insertarFrase(id, fid) {
 }
 // ── Misma persona en varios lados (evita responder dos veces) ──
 // (v31) ícono 🔁 en la cabecera: la persona tiene más mensajes sin responder (detalle al pasar el mouse, clic va al siguiente)
+// (v38, JP) tocar la miniatura de la publicación la abre ahí mismo (video con reproductor o foto grande), como las historias
+function verMedia(id) {
+  const m = MSG.find(x => x.id === id), box = document.getElementById('media-' + id); if (!m || !box) return;
+  if (box.innerHTML) { box.innerHTML = ''; return; }
+  const src = m.post_media || m.post_imagen;
+  if (!src) { if (m.post_url) window.open(m.post_url, '_blank'); return; }
+  const esVideo = /\.mp4|video/i.test(src);
+  box.innerHTML = `<div class="media-wrap">${esVideo ? `<video controls autoplay playsinline src="${esc(src)}"></video>` : `<img src="${esc(src)}" alt="">`}
+    <div class="mini media-acc"><span>${esc(m.contexto || '')}</span>${m.post_url ? ` <a href="${esc(m.post_url)}" target="_blank" rel="noopener">abrir la publicación ↗</a>` : ''} · <a href="#" onclick="verMedia(${id});return false;">cerrar</a></div></div>`;
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
 function _repetidosTag(m) {
   if (!m.autor) return '';
   const otros = MSG.filter(x => x.id !== m.id && x.estado === 'pendiente' && (x.autor || '').toLowerCase() === m.autor.toLowerCase());
@@ -865,8 +879,9 @@ function _tarjetaMensaje(m, l) {
     <div id="hist-${m.id}"></div>`;
   const cliente = `<div class="c-cliente">
       <div class="burbuja">${m.contexto ? `<div class="ctx">En la publicación: "${esc(m.contexto)}"${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver ↗</a>` : ''}</div>` : ''}${m.texto ? esc(m.texto) : ''}${_adjuntoHtml(m)}</div>
-      ${m.post_imagen ? `<a class="post" href="${esc(m.post_url || m.post_imagen)}" target="_blank" rel="noopener" title="${esc(m.contexto || 'Ver publicación')}"><img src="${esc(m.post_imagen)}" alt="" loading="lazy"></a>` : ''}
-    </div>`;
+      ${m.post_imagen ? `<div class="post" onclick="verMedia(${m.id})" title="${m.post_media ? 'Tocá para ver la publicación acá mismo' : 'Ver publicación'}"><img src="${esc(m.post_imagen)}" alt="" loading="lazy">${m.post_media && /\.mp4|video/i.test(m.post_media) ? '<span class="play">▶</span>' : ''}</div>` : ''}
+    </div>
+    <div class="media-big" id="media-${m.id}"></div>`;
   let respuesta = '', pie = '';
   if (esPend) {
     respuesta = `<div class="c-resp">
@@ -1076,6 +1091,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); cerrarFrase(); } });
 
 </script>
-<script src="manual.js?v=13"></script>
+<script src="manual.js?v=14"></script>
 </body>
 </html>
