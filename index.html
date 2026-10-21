@@ -206,6 +206,9 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .c-foot .btn.primary.ico { font-size: 28px !important; padding: 4px 12px !important; color: var(--primary) !important; font-weight: 700; } .c-foot .btn.ico[aria-label="Responder igual"] { color: var(--primary) !important; } .c-foot .btn.ico:hover { background: #f1f5f9 !important; } .c-foot .btn.primary.ico:hover { background: var(--primary-bg) !important; }
 .c-foot .btn.primary.peligro.ico:hover { background: var(--red-bg) !important; }
 /* cabecera de la pestaña: 🔄 y ✨ también sin recuadro */
+.filtros-resp { flex-wrap: nowrap; overflow-x: auto; gap: 8px; white-space: nowrap; } .filtros-resp label { flex: none; } .filtros-resp select { flex: none; }
+.filtros-resp .stat { margin-left: auto; flex: 1 1 auto; min-width: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: var(--muted); }
+@media (max-width: 760px) { .filtros-resp .stat { display: none; } }
 #btn-traer, #btn-mejorar { background: transparent !important; border: none !important; color: inherit !important; font-size: 20px !important; padding: 4px 8px !important; border-radius: 10px; } #btn-traer:hover, #btn-mejorar:hover { background: #f1f5f9 !important; }
 /* (v32) Opción B elegida por JP: fondo gris de la pestaña y cabecera de cada tarjeta teñida con el color de la red */
 #content-respuestas { background: #f3f4f6; margin: -16px -16px 0; padding: 16px; border-radius: 0; }
@@ -336,7 +339,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
       <div id="w-lista"></div>
     </section>
     <section id="content-respuestas" class="tab-content">
-      <div class="filters">
+      <div class="filters filtros-resp">
         <div class="subtabs"><button id="mt-atelier" class="active" onclick="cuentaMensajes('atelier')">Atelier <span class="count" id="mc-atelier"></span></button><button id="mt-oficial" onclick="cuentaMensajes('oficial')">Claudia Adorno <span class="count" id="mc-oficial"></span></button></div>
         <label>Red</label><select id="m-red" onchange="renderMensajes()"><option value="">IG + FB</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select>
         <label>Tipo</label><select id="m-tipo" onchange="renderMensajes()"><option value="">Todo</option><option value="dm">Mensajes privados</option><option value="comentario">Comentarios</option></select>
@@ -345,7 +348,6 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
         <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)" aria-label="Mejorar respuestas" style="font-size:16px;line-height:1;padding:6px 10px">✨</button>
         <div class="stat" id="m-stat"></div>
       </div>
-      <div class="mini" style="margin:0 0 10px">El servidor trae mensajes y comentarios nuevos cada 10 minutos (🔄 para buscar ahora). Tocá <b>Enviar</b> y la respuesta sale en menos de un minuto. Nada se manda solo.</div>
       <div id="m-lista"></div>
     </section>
     <section id="content-oportunidades" class="tab-content">
@@ -820,7 +822,9 @@ function renderMensajes() {
   document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('active', b.id === 'mt-' + cu));
   const l = MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && m.estado === est);
   const pend = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === cu);
-  document.getElementById('m-stat').textContent = `${pend.length} sin responder (${pend.filter(m => m.tipo === 'dm').length} privados · ${pend.filter(m => m.tipo === 'comentario').length} comentarios) · ${pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5).length} con más de 2 h`;
+  const nDm = pend.filter(m => m.tipo === 'dm').length, nCo = pend.length - nDm, nVi = pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5).length;
+  const st = document.getElementById('m-stat'); st.textContent = `${pend.length} sin responder · ${nDm} priv. · ${nCo} com.${nVi ? ` · ⏰ ${nVi}` : ''}`;
+  st.title = `${pend.length} sin responder: ${nDm} mensajes privados y ${nCo} comentarios. ${nVi} llevan más de 2 horas esperando.`;
   // (v30) en escritorio los privados consecutivos se encastran en dos columnas tipo mosaico (sin huecos); cada comentario corta el mosaico y va a todo el ancho
   let html = '', run = [];
   const cerrar = () => { if (run.length) { html += `<div class="dm-run ${run.length === 1 ? 'uno' : ''}">${run.join('')}</div>`; run = []; } };
@@ -829,6 +833,12 @@ function renderMensajes() {
   document.getElementById('m-lista').innerHTML = l.length ? html : `<div class="empty">${est === 'pendiente' ? 'Nada sin responder. 🎉' : 'Nada acá.'}</div>`;
 }
 // (v27) Tarjeta en tres zonas: cabecera · lo que escribió el cliente · tu respuesta. Enviar es el único botón destacado.
+// (v33) logos reales de Instagram y Facebook (SVG en línea, blancos sobre el círculo de color)
+function _iconoRed(p) {
+  return p === 'instagram'
+    ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="#fff" stroke="none"/></svg>'
+    : '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.6 1.6-1.6h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2v2.3H7.4V14h2.8v8z"/></svg>';
+}
 function _tarjetaMensaje(m, l) {
   const esPend = m.estado === 'pendiente', esCom = m.tipo === 'comentario';
   const viejo = esPend && (Date.now() - new Date(m.fecha)) > 72e5;
@@ -838,7 +848,7 @@ function _tarjetaMensaje(m, l) {
   const dmDefault = /precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? (_nombre(m.autor) || 'Hola, ') + '¡gracias por preguntar! Te paso el link para que veas el producto con el precio, las medidas y los colores disponibles: https://www.claudiaadorno.com/\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊' : '';
   const fechaCorta = f => f ? new Date(f).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : '';
   const cabecera = `<div class="c-head">
-      <div class="avatar ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma}">${m.plataforma === 'instagram' ? 'IG' : 'FB'}</div>
+      <div class="avatar ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}">${_iconoRed(m.plataforma)}</div>
       <div class="c-quien"><div class="quien">${esc(m.autor || 'desconocido')}</div><div class="meta">${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'} · ${_hace(m.fecha)}</div></div>
       <span class="tag tipo">${esCom ? '💬 Comentario' : '✉️ Privado'}</span>
       ${viejo ? '<span class="tag hora" title="Lleva más de 2 horas sin respuesta">⏰ más de 2 h</span>' : ''}
