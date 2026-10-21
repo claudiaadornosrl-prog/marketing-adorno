@@ -244,9 +244,8 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 }
 /* (v29, JP) escritorio ancho: los privados van de a dos por fila (son tarjetas chicas); los comentarios, con su casilla de privado, a todo el ancho */
 @media (min-width: 1000px) {
-  .dm-run { column-count: 2; column-gap: 14px; margin-bottom: 14px; }   /* (v36) un privado suelto también va a media pantalla, para que todas las fichas de privados midan igual */
-  .dm-run .card { break-inside: avoid; display: inline-block; width: 100%; vertical-align: top; margin-bottom: 14px; }
-  .dm-run .card:last-child { margin-bottom: 0; }
+  .dm-run { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; align-items: start; }   /* (v39) dos columnas reales; un privado suelto va a media pantalla igual */
+  .dm-run .dm-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; } .dm-run .card { margin-bottom: 0; }
   .card.dm textarea { min-height: 88px; } .card.dm .c-cliente { padding: 10px 12px; } .card.dm .c-resp { padding: 10px 12px 12px; }
 }
 @keyframes reloj-gira { 0%, 70% { transform: rotate(0deg); } 85% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
@@ -533,7 +532,11 @@ async function init() {
   document.getElementById('franja-prueba').style.display = 'none';
   await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas(), cargarMensajes(), cargarFrases(), cargarPosts(), cargarDescripciones()]);
   renderTablero(); renderContenido(); renderTareas(); renderMensajes(); renderOportunidades(); renderPosts(); renderDescripciones(); renderHoy();
-  setInterval(() => cargarMensajes().then(() => { if (document.getElementById('content-respuestas').classList.contains('active')) renderMensajes(); }), 120000);
+  setInterval(() => cargarMensajes().then(() => {
+    const act = document.getElementById('content-respuestas').classList.contains('active');
+    const ocupado = document.getElementById('m-lista').contains(document.activeElement) || [...document.querySelectorAll('#m-lista video, #m-lista audio')].some(v => !v.paused);
+    if (act && !ocupado) renderMensajes();   // (v39) si estás escribiendo o mirando un video, no se redibuja la lista
+  }), 120000);
   sb.from('marketing_pedidos').select('id').eq('tipo', 'redactar').in('estado', ['pendiente', 'en_curso']).limit(1).then(({ data }) => { if (data && data.length) _vigilarPedido(); });
 }
 function onTab(k) { if (k === 'hoy') renderHoy(); if (k === 'tablero') renderTablero(); if (k === 'contenido') renderContenido(); if (k === 'web') renderTareas(); if (k === 'respuestas') renderMensajes(); if (k === 'oportunidades') renderOportunidades(); if (k === 'posts') renderPosts(); if (k === 'descripciones') renderDescripciones(); }
@@ -847,7 +850,22 @@ function renderMensajes() {
   const cerrar = () => { if (run.length) { html += `<div class="dm-run ${run.length === 1 ? 'uno' : ''}">${run.join('')}</div>`; run = []; } };
   for (const m of l) { const t = _tarjetaMensaje(m, l); if (m.tipo === 'dm') run.push(t); else { cerrar(); html += t; } }
   cerrar();
-  document.getElementById('m-lista').innerHTML = l.length ? html : `<div class="empty">${est === 'pendiente' ? 'Nada sin responder. 🎉' : 'Nada acá.'}</div>`;
+  const lista = document.getElementById('m-lista');
+  lista.querySelectorAll('video, audio').forEach(v => { try { v.pause(); v.removeAttribute('src'); v.load(); } catch (_) {} });   // (v39) que no quede sonando un video viejo
+  lista.innerHTML = l.length ? html : `<div class="empty">${est === 'pendiente' ? 'Nada sin responder. 🎉' : 'Nada acá.'}</div>`;
+  _mosaicoDms();
+}
+// (v39) Mosaico de privados con dos columnas reales (antes era CSS column-count, que en Chrome duplicaba los videos con sonido):
+// cada tarjeta va a la columna más corta, en orden.
+function _mosaicoDms() {
+  if (!matchMedia('(min-width: 1000px)').matches) return;
+  document.querySelectorAll('#m-lista .dm-run').forEach(run => {
+    const cards = [...run.children];
+    if (cards.length < 2) return;
+    const a = document.createElement('div'), b = document.createElement('div'); a.className = b.className = 'dm-col';
+    run.innerHTML = ''; run.append(a, b); run.classList.add('cols');
+    for (const c of cards) (a.offsetHeight <= b.offsetHeight ? a : b).appendChild(c);
+  });
 }
 // (v27) Tarjeta en tres zonas: cabecera · lo que escribió el cliente · tu respuesta. Enviar es el único botón destacado.
 // (v33) logos reales de Instagram y Facebook (SVG en línea, blancos sobre el círculo de color)
