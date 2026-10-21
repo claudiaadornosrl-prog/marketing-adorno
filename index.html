@@ -205,12 +205,15 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .card textarea:focus { outline: 2px solid var(--primary-bg); border-color: var(--primary); }
 .c-foot { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid #f1f5f9; background: #fff; flex-wrap: wrap; }
 .c-foot .btn.primary { padding: 10px 22px; font-size: 14px; font-weight: 700; border-radius: 10px; } .c-foot .btn.primary.peligro { background: var(--red); border-color: var(--red); }
-.c-foot > .mini { margin-left: auto; } .c-foot.estado { background: #fafafa; } .enviado-txt { font-size: 13px; line-height: 1.45; flex: 1; min-width: 200px; white-space: pre-wrap; }
+.c-foot > .mini { margin-left: auto; }
+.c-foot .catbox { flex: 1; min-width: 220px; margin: 0; position: relative; } .c-foot .catbox input { padding: 9px 12px; border-radius: 10px; }
+.c-foot .cat-res:not(:empty) { position: absolute; left: 0; right: 0; bottom: calc(100% + 4px); background: #fff; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 4px; z-index: 5; max-height: 280px; overflow: auto; } .c-foot.estado { background: #fafafa; } .enviado-txt { font-size: 13px; line-height: 1.45; flex: 1; min-width: 200px; white-space: pre-wrap; }
 @media (max-width: 760px) {
   .c-resp .dos { grid-template-columns: 1fr; } .card textarea { min-height: 96px; }
   .c-cliente .post { width: 64px; height: 64px; } .c-head .acciones-sec { margin-left: 0; width: 100%; justify-content: flex-end; }
   .c-foot { position: sticky; bottom: 0; box-shadow: 0 -4px 12px rgba(0,0,0,.06); z-index: 2; } .c-foot .btn.primary { flex: 1; } .c-foot > .mini { display: none; }
   .c-foot .btn { padding: 10px 12px; font-size: 14px; }
+  .c-foot .catbox { order: -1; width: 100%; flex: none; }
 }
 @keyframes reloj-gira { 0%, 70% { transform: rotate(0deg); } 85% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
 .reloj { display: inline-block; animation: reloj-gira 1.6s ease-in-out infinite; }
@@ -630,8 +633,9 @@ function elegirProducto(id, key) {
   const dm = document.getElementById('dm-' + id) || document.getElementById('resp-' + id); if (!dm) return;
   const m = MSG.find(x => x.id === id);
   dm.value = `${_nombre(m?.autor) || 'Hola, '}¡gracias por preguntar! Te paso el link de ${p.titulo}${p.precio ? ' (' + plata(p.precio) + ')' : ''} con las medidas y los colores disponibles: ${link}\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊`;
-  document.getElementById('cat-' + id).innerHTML = `<div class="mini">${esc(nota)}</div>`;
+  document.getElementById('cat-' + id).innerHTML = '';
   document.getElementById('catq-' + id).value = '';
+  toast(nota);
 }
 const TIENDA_PUBLICA = false;   // pasar a true cuando se lance atelierclaudiaadorno.com
 
@@ -784,13 +788,12 @@ function _tarjetaMensaje(m, l) {
       <div class="frases">${FRASES.map(f => `<button class="chip-f" onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</button>`).join('')}</div>
       <div class="${esCom ? 'dos' : ''}">
         <div class="caja"><label>${esCom ? 'Pública, en el comentario' : 'Respuesta'}</label><textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea></div>
-        ${esCom ? `<div class="caja"><label>Privada, con el link del producto <span class="mini">(opcional)</span></label><textarea id="dm-${m.id}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores…">${esc(dmDefault)}</textarea>
-          ${precio ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}</div>` : ''}
+        ${esCom ? `<div class="caja"><label>Privada, con el link del producto <span class="mini">(opcional)</span></label><textarea id="dm-${m.id}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores…">${esc(dmDefault)}</textarea></div>` : ''}
       </div>
     </div>`;
     pie = ofens
       ? `<div class="c-foot"><button class="btn primary peligro" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button><button class="btn" onclick="enviarMensaje(${m.id})">Responder igual</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">La persona no se entera</span></div>`
-      : `<div class="c-foot"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button>${esCom ? `<button class="btn" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`;
+      : `<div class="c-foot"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button>${esCom ? `<button class="btn" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button>` : ''}${esCom && precio ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`;
   } else {
     const estado = m.estado === 'ocultar' ? `<span class="tag tipo">⏳ Se oculta en menos de 1 minuto</span> <button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar</button>`
       : m.estado === 'oculto' ? `<span class="tag tipo">🙈 Oculto ${fechaCorta(m.oculto_at)} · solo lo ve quien lo escribió</span>`
