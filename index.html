@@ -210,9 +210,9 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .c-foot .cat-res:not(:empty) { position: absolute; left: 0; right: 0; bottom: calc(100% + 4px); background: #fff; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 4px; z-index: 5; max-height: 280px; overflow: auto; } .c-foot.estado { background: #fafafa; } .enviado-txt { font-size: 13px; line-height: 1.45; flex: 1; min-width: 200px; white-space: pre-wrap; }
 @media (max-width: 760px) {
   .c-resp .dos { grid-template-columns: 1fr; } .card textarea { min-height: 96px; }
-  .c-cliente .post { width: 64px; height: 64px; } .c-head .acciones-sec { margin-left: 0; width: 100%; justify-content: flex-end; }
+  .c-cliente .post { width: 64px; height: 64px; }
   .c-foot { position: sticky; bottom: 0; box-shadow: 0 -4px 12px rgba(0,0,0,.06); z-index: 2; } .c-foot .btn.primary { flex: 1; } .c-foot > .mini { display: none; }
-  .c-foot .btn { padding: 10px 12px; font-size: 14px; }
+  .c-foot .btn { padding: 10px 12px; font-size: 14px; } .c-foot .btn .lbl { display: none; }
   .c-foot .catbox { order: -1; width: 100%; flex: none; }
 }
 @keyframes reloj-gira { 0%, 70% { transform: rotate(0deg); } 85% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
@@ -793,7 +793,7 @@ function _tarjetaMensaje(m, l) {
     </div>`;
     pie = ofens
       ? `<div class="c-foot"><button class="btn primary peligro" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button><button class="btn" onclick="enviarMensaje(${m.id})">Responder igual</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">La persona no se entera</span></div>`
-      : `<div class="c-foot"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button>${esCom ? `<button class="btn" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button>` : ''}${esCom && precio ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`;
+      : `<div class="c-foot"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button>${esCom ? `<button class="btn" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 <span class="lbl">Ocultar</span></button>` : ''}${esCom && precio ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`;
   } else {
     const estado = m.estado === 'ocultar' ? `<span class="tag tipo">⏳ Se oculta en menos de 1 minuto</span> <button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar</button>`
       : m.estado === 'oculto' ? `<span class="tag tipo">🙈 Oculto ${fechaCorta(m.oculto_at)} · solo lo ve quien lo escribió</span>`
