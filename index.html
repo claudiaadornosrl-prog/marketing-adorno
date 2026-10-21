@@ -177,13 +177,45 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 @media (max-width: 760px) { .dos-col { grid-template-columns: 1fr; } .dos-col textarea { min-height: 90px; } }
 .msg .acc { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
 .msg.viejo { border-left: 4px solid var(--amber); }
+/* ── Tarjeta de Respuestas (v27): cabecera · cliente · tu respuesta · pie ── */
+.card { background: #fff; border: 1px solid var(--border); border-radius: 14px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.05); overflow: hidden; }
+.card.urgente { border-left: 5px solid var(--amber); } .card.ofensiva { border-left: 5px solid var(--red); }
+.c-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap; }
+.c-head .c-quien { margin-right: 4px; } .c-head .quien { font-weight: 700; font-size: 14px; } .c-head .meta { color: var(--muted); font-size: 12px; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 12px; }
+.avatar.ig { background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af); } .avatar.fb { background: #1877f2; }
+.tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.tag.tipo { background: #f1f5f9; color: #334155; } .tag.hora { background: var(--amber-bg); color: #92400e; } .tag.precio { background: var(--green-bg); color: #166534; } .tag.ofens { background: var(--red-bg); color: #991b1b; }
+.c-head .acciones-sec { margin-left: auto; display: flex; gap: 4px; }
+.btn.ghost { border-color: transparent; color: var(--muted); text-decoration: none; } .btn.ghost:hover { background: #f1f5f9; }
+.c-cliente { display: flex; gap: 12px; padding: 12px 14px; background: #fafafa; }
+.burbuja { flex: 1; min-width: 0; background: #fff; border: 1px solid var(--border); border-radius: 4px 14px 14px 14px; padding: 10px 12px; font-size: 14px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.burbuja .ctx { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; white-space: normal; } .burbuja .ctx a { color: var(--primary); }
+.burbuja .adj { margin-top: 6px; } .burbuja .adj .mini { margin-bottom: 2px; }
+.c-cliente .post { width: 84px; height: 84px; border-radius: 10px; overflow: hidden; flex: none; border: 1px solid var(--border); background: #f1f5f9; display: block; }
+.c-cliente .post img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card .hist { margin: 8px 14px 0; } .card > .mini { margin: 6px 14px 0; }
+.c-resp { padding: 12px 14px 14px; }
+.c-resp .titulo { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.c-resp .titulo .mini { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.sugerido { background: var(--primary-bg); color: var(--primary-dark); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.c-resp .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.caja label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
+.card textarea { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 14px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; min-height: 120px; resize: vertical; line-height: 1.4; }
+.card textarea:focus { outline: 2px solid var(--primary-bg); border-color: var(--primary); }
+.c-foot { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid #f1f5f9; background: #fff; flex-wrap: wrap; }
+.c-foot .btn.primary { padding: 10px 22px; font-size: 14px; font-weight: 700; border-radius: 10px; } .c-foot .btn.primary.peligro { background: var(--red); border-color: var(--red); }
+.c-foot > .mini { margin-left: auto; } .c-foot.estado { background: #fafafa; } .enviado-txt { font-size: 13px; line-height: 1.45; flex: 1; min-width: 200px; white-space: pre-wrap; }
+@media (max-width: 760px) {
+  .c-resp .dos { grid-template-columns: 1fr; } .card textarea { min-height: 96px; }
+  .c-cliente .post { width: 64px; height: 64px; } .c-head .acciones-sec { margin-left: 0; width: 100%; justify-content: flex-end; }
+  .c-foot { position: sticky; bottom: 0; box-shadow: 0 -4px 12px rgba(0,0,0,.06); z-index: 2; } .c-foot .btn.primary { flex: 1; } .c-foot > .mini { display: none; }
+  .c-foot .btn { padding: 10px 12px; font-size: 14px; }
+}
 @keyframes reloj-gira { 0%, 70% { transform: rotate(0deg); } 85% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
 .reloj { display: inline-block; animation: reloj-gira 1.6s ease-in-out infinite; }
 .msg .ofensivo { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; padding: 5px 8px; font-size: 12px; margin: 4px 0 6px; }
 .btn.ocultar-sug { background: #fee2e2; border-color: #fca5a5; color: #991b1b; font-weight: 600; }
-.post-thumb { flex: none; width: 170px; align-self: stretch; min-height: 120px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #f1f5f9; }
-.post-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-@media (max-width: 600px) { .post-thumb { width: 96px; min-height: 96px; } }
 .catbox { margin-top: 6px; } .catbox input { width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 13px; }
 .cat-res { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; }
 .cat-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 8px; cursor: pointer; font-size: 13px; } .cat-item:hover { background: var(--primary-bg); }
@@ -718,31 +750,57 @@ function renderMensajes() {
   const l = MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && m.estado === est);
   const pend = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === cu);
   document.getElementById('m-stat').textContent = `${pend.length} sin responder (${pend.filter(m => m.tipo === 'dm').length} privados · ${pend.filter(m => m.tipo === 'comentario').length} comentarios) · ${pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5).length} con más de 2 h`;
-  document.getElementById('m-lista').innerHTML = l.length ? l.map(m => `<div class="msg ${m.estado === 'pendiente' && (Date.now() - new Date(m.fecha)) > 72e5 ? 'viejo' : ''}" id="msg-${m.id}">
-      <div class="red ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma}">${m.plataforma === 'instagram' ? 'IG' : 'FB'}</div>
-      <div class="cuerpo">
-        <div><span class="quien">${esc(m.autor || 'desconocido')}</span> <span class="meta">· ${m.tipo === 'dm' ? 'mensaje privado' : 'comentario'} · ${_hace(m.fecha)}${m.tipo === 'dm' && enlaceMensaje(m) ? ` · <a href="${esc(enlaceMensaje(m))}" target="_blank" rel="noopener">abrir en Meta ↗</a>` : ''}${m.autor ? ` · <a href="#" onclick="verHistorial(${m.id});return false;" title="Ver qué escribió antes esta persona y qué le respondimos">historial</a>` : ''}</span></div>
-        <div id="hist-${m.id}"></div>
-        ${m.contexto ? `<div class="ctx">En: ${esc(m.contexto)}${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver publicación ↗</a>` : ''}</div>` : ''}
-        <div class="txt">${m.texto ? esc(m.texto) : ''}${_adjuntoHtml(m)}</div>
-        ${_repetidos(m)}
-        ${m.ofensivo && m.estado === 'pendiente' ? `<div class="ofensivo">⚠ Parece ofensivo o spam. Sugerimos 🙈 ocultarlo en vez de responder (la persona no se entera).</div>` : ''}
-        ${m.estado === 'pendiente' ? `<div class="frases">${FRASES.map(f => `<button class="chip-f" onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</button>`).join('')}</div>
-          <div class="dos-col"><div><div class="mini">${m.tipo === 'comentario' ? 'Respuesta pública al comentario' : 'Respuesta'}</div><textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea></div>
-          ${m.tipo === 'comentario' ? `<div><div class="mini">Mensaje privado a esta persona (opcional · para precios, con el link del producto)</div>
-          <textarea id="dm-${m.id}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores: https://www.claudiaadorno.com/ …">${/precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? esc((_nombre(m.autor) || 'Hola, ') + '¡gracias por preguntar! Te paso el link para que veas el producto con el precio, las medidas y los colores disponibles: https://www.claudiaadorno.com/\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊') : ''}</textarea></div>` : ''}</div>
-          ${m.oportunidad || /precio|cuanto|cuánto|valor|cuesta|price|how much|preço|quanto/i.test(m.texto || '') ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar por nombre, código o SKU (web oficial y atelier)…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}
-          <div class="acc"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button>${m.tipo === 'comentario' ? `<button class="btn ${m.ofensivo ? 'ocultar-sug' : ''}" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`
-        : m.estado === 'ocultar' ? `<div class="mini">⏳ Se oculta en menos de 1 minuto</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar</button></div>`
-        : m.estado === 'oculto' ? `<div class="mini">🙈 Oculto ${m.oculto_at ? new Date(m.oculto_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} (solo lo ve quien lo escribió)</div>`
-        : m.estado === 'para_enviar' ? `<div class="mini">⏳ Por enviar: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>⏳ + privado: "${esc(m.respuesta_dm)}"` : ''}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar envío</button></div>`
-        : m.estado === 'enviado' ? `<div class="mini">✓ Enviado ${m.enviado_at ? new Date(m.enviado_at).toLocaleString('es-AR', {dateStyle:'short', timeStyle:'short'}) : ''} por ${esc((m.enviado_por || '').split('@')[0])}: "${esc(m.respuesta || '')}"${m.respuesta_dm ? `<br>${m.dm_enviado_at ? '✓' : '⏳'} privado: "${esc(m.respuesta_dm)}"` : ''}</div>`
-        : m.estado === 'error' ? `<div class="mini" style="color:var(--red)">✗ No se pudo enviar: ${esc(m.error || '')}</div><div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Reintentar</button></div>`
-        : `<div class="acc"><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Volver a pendientes</button></div>`}
-      </div>
-      ${m.post_imagen ? `<a class="post-thumb" href="${esc(m.post_url || m.post_imagen)}" target="_blank" rel="noopener" title="${esc(m.contexto || 'Ver publicación')}"><img src="${esc(m.post_imagen)}" alt="" loading="lazy"></a>` : ''}
-      </div>`).join('')
+  document.getElementById('m-lista').innerHTML = l.length ? l.map(m => _tarjetaMensaje(m, l)).join('')
     : `<div class="empty">${est === 'pendiente' ? 'Nada sin responder. 🎉' : 'Nada acá.'}</div>`;
+}
+// (v27) Tarjeta en tres zonas: cabecera · lo que escribió el cliente · tu respuesta. Enviar es el único botón destacado.
+function _tarjetaMensaje(m, l) {
+  const esPend = m.estado === 'pendiente', esCom = m.tipo === 'comentario';
+  const viejo = esPend && (Date.now() - new Date(m.fecha)) > 72e5;
+  const precio = m.oportunidad || /precio|cuanto|cuánto|valor|cuesta|price|how much|preço|quanto/i.test(m.texto || '');
+  const ofens = m.ofensivo && esPend;
+  const link = enlaceMensaje(m);
+  const dmDefault = /precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? (_nombre(m.autor) || 'Hola, ') + '¡gracias por preguntar! Te paso el link para que veas el producto con el precio, las medidas y los colores disponibles: https://www.claudiaadorno.com/\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊' : '';
+  const fechaCorta = f => f ? new Date(f).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+  const cabecera = `<div class="c-head">
+      <div class="avatar ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma}">${m.plataforma === 'instagram' ? 'IG' : 'FB'}</div>
+      <div class="c-quien"><div class="quien">${esc(m.autor || 'desconocido')}</div><div class="meta">${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'} · ${_hace(m.fecha)}</div></div>
+      <span class="tag tipo">${esCom ? '💬 Comentario' : '✉️ Privado'}</span>
+      ${viejo ? '<span class="tag hora" title="Lleva más de 2 horas sin respuesta">⏰ más de 2 h</span>' : ''}
+      ${precio && esPend ? '<span class="tag precio" title="Pregunta precio: oportunidad de venta">💲 Pregunta precio</span>' : ''}
+      ${ofens ? '<span class="tag ofens" title="Insultos, burla o spam detectados: sugerimos ocultarlo">⚠ Parece ofensivo</span>' : ''}
+      <div class="acciones-sec">${m.autor ? `<button class="btn ghost" onclick="verHistorial(${m.id})" title="Ver qué escribió antes esta persona y qué le respondimos">🕓 Historial</button>` : ''}${link ? `<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener" title="${esCom ? 'Abrir la publicación' : 'Abrir en Instagram / Facebook'}">↗</a>` : ''}</div>
+    </div>
+    <div id="hist-${m.id}"></div>`;
+  const cliente = `<div class="c-cliente">
+      <div class="burbuja">${m.contexto ? `<div class="ctx">En la publicación: "${esc(m.contexto)}"${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver ↗</a>` : ''}</div>` : ''}${m.texto ? esc(m.texto) : ''}${_adjuntoHtml(m)}</div>
+      ${m.post_imagen ? `<a class="post" href="${esc(m.post_url || m.post_imagen)}" target="_blank" rel="noopener" title="${esc(m.contexto || 'Ver publicación')}"><img src="${esc(m.post_imagen)}" alt="" loading="lazy"></a>` : ''}
+    </div>
+    ${_repetidos(m)}`;
+  let respuesta = '', pie = '';
+  if (esPend) {
+    respuesta = `<div class="c-resp">
+      <div class="titulo">Tu respuesta ${m.respuesta_sugerida ? '<span class="sugerido" title="Texto redactado por el sistema en la voz de Clau: revisalo y corregí lo que quieras">✨ sugerida por Clau</span>' : '<span class="mini">(todavía sin sugerencia: escribila o tocá ✨ arriba)</span>'}</div>
+      <div class="frases">${FRASES.map(f => `<button class="chip-f" onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</button>`).join('')}</div>
+      <div class="${esCom ? 'dos' : ''}">
+        <div class="caja"><label>${esCom ? 'Pública, en el comentario' : 'Respuesta'}</label><textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea></div>
+        ${esCom ? `<div class="caja"><label>Privada, con el link del producto <span class="mini">(opcional)</span></label><textarea id="dm-${m.id}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores…">${esc(dmDefault)}</textarea>
+          ${precio ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}</div>` : ''}
+      </div>
+    </div>`;
+    pie = ofens
+      ? `<div class="c-foot"><button class="btn primary peligro" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button><button class="btn" onclick="enviarMensaje(${m.id})">Responder igual</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">La persona no se entera</span></div>`
+      : `<div class="c-foot"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button>${esCom ? `<button class="btn" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`;
+  } else {
+    const estado = m.estado === 'ocultar' ? `<span class="tag tipo">⏳ Se oculta en menos de 1 minuto</span> <button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar</button>`
+      : m.estado === 'oculto' ? `<span class="tag tipo">🙈 Oculto ${fechaCorta(m.oculto_at)} · solo lo ve quien lo escribió</span>`
+      : m.estado === 'para_enviar' ? `<div class="enviado-txt">⏳ <b>Por enviar:</b> ${esc(m.respuesta || '')}${m.respuesta_dm ? `<br>⏳ <b>+ privado:</b> ${esc(m.respuesta_dm)}` : ''}</div><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar envío</button>`
+      : m.estado === 'enviado' ? `<div class="enviado-txt">✓ <b>Enviado</b> ${fechaCorta(m.enviado_at)} por ${esc((m.enviado_por || '').split('@')[0])}: ${esc(m.respuesta || '')}${m.respuesta_dm ? `<br>${m.dm_enviado_at ? '✓' : '⏳'} <b>privado:</b> ${esc(m.respuesta_dm)}` : ''}</div>`
+      : m.estado === 'error' ? `<div class="enviado-txt" style="color:var(--red)">✗ No se pudo enviar: ${esc(m.error || '')}</div><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Reintentar</button>`
+      : `<button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Volver a pendientes</button>`;
+    pie = `<div class="c-foot estado">${estado}</div>`;
+  }
+  return `<div class="card ${viejo ? 'urgente' : ''} ${ofens ? 'ofensiva' : ''}" id="msg-${m.id}">${cabecera}${cliente}${respuesta}${pie}</div>`;
 }
 function _nombre(a) { a = (a || '').trim(); return (a.includes(' ') && !a.includes('.') && !a.includes('_')) ? a.split(' ')[0] + ', ' : ''; }
 async function enviarMensaje(id) {
@@ -928,6 +986,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
 
 </script>
-<script src="manual.js?v=11"></script>
+<script src="manual.js?v=12"></script>
 </body>
 </html>
