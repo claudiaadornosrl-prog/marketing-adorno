@@ -200,6 +200,12 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .c-resp .titulo .mini { text-transform: none; letter-spacing: 0; font-weight: 400; }
 .sugerido { background: var(--primary-bg); color: var(--primary-dark); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 700; text-transform: none; letter-spacing: 0; }
 .sugerido.base { background: #f1f5f9; color: #334155; }
+.tag.repe { background: #ede9fe; color: #5b21b6; cursor: pointer; }
+.c-foot .btn.ico { font-size: 18px; line-height: 1; padding: 8px 14px; min-width: 48px; } .c-foot .btn.primary.ico { padding: 9px 20px; }
+.c-resp .frases-btn { font-size: 16px; padding: 2px 8px; }
+.c-resp .frases .chip-f { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px 3px 10px; } .c-resp .frases .chip-f > span { cursor: pointer; } .c-resp .frases .chip-f i { font-style: normal; font-size: 11px; opacity: .55; cursor: pointer; padding: 0 2px; } .c-resp .frases .chip-f i:hover { opacity: 1; }
+.c-resp .frases .chip-f.nueva { border-style: dashed; color: var(--primary); cursor: pointer; }
+#fr-overlay label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 10px; } #fr-overlay input:not([type=hidden]), #fr-overlay textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; font-family: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
 .c-resp .frases { display: none; } .c-resp .frases.abierto { display: flex; } .c-resp .frases-btn { margin-left: auto; font-weight: 600; text-transform: none; letter-spacing: 0; padding: 4px 10px; } .c-resp .frases-btn.on { background: var(--primary-bg); color: var(--primary); }
 .c-resp .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .caja label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px; }
@@ -214,7 +220,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
   .c-resp .dos { grid-template-columns: 1fr; } .card textarea { min-height: 96px; }
   .c-cliente .post { width: 64px; height: 64px; }
   .c-foot { position: sticky; bottom: 0; box-shadow: 0 -4px 12px rgba(0,0,0,.06); z-index: 2; } .c-foot .btn.primary { flex: 1; } .c-foot > .mini { display: none; }
-  .c-foot .btn { padding: 10px 12px; font-size: 14px; } .c-foot .btn .lbl { display: none; }
+  .c-foot .btn.ico { padding: 10px 14px; font-size: 20px; }
 }
 /* (v29, JP) escritorio ancho: los privados van de a dos por fila (son tarjetas chicas); los comentarios, con su casilla de privado, a todo el ancho */
 @media (min-width: 1000px) {
@@ -389,6 +395,18 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
           <label style="grid-column:1/-1">Notas <input id="f-notas"></label>
         </div>
         <div class="box-pie"><button class="btn" onclick="cerrarContenido()">Cancelar</button><button class="btn primary" onclick="guardarContenido()">Guardar</button></div>
+      </div>
+    </div>
+    <div id="fr-overlay" class="overlay">
+      <div class="box" style="max-width:520px">
+        <div class="box-head"><b id="fr-titulo">Frase rápida</b><button class="btn" onclick="cerrarFrase()" title="Cerrar">✕</button></div>
+        <div class="form">
+          <input type="hidden" id="fr-id">
+          <label>Nombre corto (lo que se ve en el botón) <input id="fr-nombre" maxlength="30" placeholder="Ej: Horarios"></label>
+          <label>Texto que se pega en la respuesta <textarea id="fr-texto" rows="4" placeholder="Ej: Alcorta abre todos los días de 10 a 21 y Unicenter de 10 a 22."></textarea></label>
+          <div class="mini">En los comentarios se agrega la firma "Clau" sola al final; en los privados no.</div>
+        </div>
+        <div class="box-pie"><button class="btn" id="fr-borrar" onclick="guardarFrase(true)" style="margin-right:auto;color:var(--red)">Sacar de la lista</button><button class="btn" onclick="cerrarFrase()">Cancelar</button><button class="btn primary" onclick="guardarFrase(false)">Guardar</button></div>
       </div>
     </div>
     <div id="w-overlay" class="overlay">
@@ -660,7 +678,29 @@ async function verHistorial(id) {
 
 // ── Frases guardadas (marketing_frases) ──
 let FRASES = [];
-async function cargarFrases() { const { data } = await sb.from('marketing_frases').select('id, nombre, texto').eq('activa', true).order('orden'); FRASES = data || []; }
+async function cargarFrases() { const { data } = await sb.from('marketing_frases').select('id, nombre, texto, orden').eq('activa', true).order('orden'); FRASES = data || []; }
+// (v31) editor de frases rápidas (subventana: cierra solo con ✕ / Cancelar / Escape)
+function editarFrase(fid) {
+  const f = FRASES.find(x => x.id === fid) || { id: 0, nombre: '', texto: '' };
+  document.getElementById('fr-id').value = f.id || '';
+  document.getElementById('fr-nombre').value = f.nombre || '';
+  document.getElementById('fr-texto').value = f.texto || '';
+  document.getElementById('fr-titulo').textContent = f.id ? 'Editar frase rápida' : 'Nueva frase rápida';
+  document.getElementById('fr-borrar').style.display = f.id ? '' : 'none';
+  document.getElementById('fr-overlay').classList.add('open');
+  document.getElementById('fr-nombre').focus();
+}
+function cerrarFrase() { document.getElementById('fr-overlay').classList.remove('open'); }
+async function guardarFrase(borrar) {
+  const id = Number(document.getElementById('fr-id').value) || 0, nombre = document.getElementById('fr-nombre').value.trim(), texto = document.getElementById('fr-texto').value.trim();
+  if (!borrar && (!nombre || !texto)) { toast('Poné el nombre corto y el texto', 'error'); return; }
+  let error;
+  if (borrar) { if (!confirm(`¿Sacar la frase "${nombre}" de la lista?`)) return; ({ error } = await sb.from('marketing_frases').update({ activa: false }).eq('id', id)); }
+  else if (id) ({ error } = await sb.from('marketing_frases').update({ nombre, texto }).eq('id', id));
+  else ({ error } = await sb.from('marketing_frases').insert({ nombre, texto, activa: true, orden: (Math.max(0, ...FRASES.map(x => x.orden || 0)) + 1) }));
+  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  cerrarFrase(); await cargarFrases(); renderMensajes(); toast(borrar ? 'Frase sacada' : '✓ Frase guardada');
+}
 function insertarFrase(id, fid) {
   const f = FRASES.find(x => x.id === fid), t = document.getElementById('resp-' + id); if (!f || !t) return;
   const base = t.value.replace(/\s*Clau\s*$/, '').trim();
@@ -668,6 +708,14 @@ function insertarFrase(id, fid) {
   t.focus();
 }
 // ── Misma persona en varios lados (evita responder dos veces) ──
+// (v31) ícono 🔁 en la cabecera: la persona tiene más mensajes sin responder (detalle al pasar el mouse, clic va al siguiente)
+function _repetidosTag(m) {
+  if (!m.autor) return '';
+  const otros = MSG.filter(x => x.id !== m.id && x.estado === 'pendiente' && (x.autor || '').toLowerCase() === m.autor.toLowerCase());
+  if (!otros.length) return '';
+  const det = otros.map(x => `${x.plataforma === 'instagram' ? 'IG' : 'FB'} ${x.tipo === 'dm' ? 'privado' : 'comentario'} · ${_hace(x.fecha)}`).join('\n');
+  return `<span class="tag repe" title="Esta persona también tiene ${otros.length} mensaje(s) más sin responder:\n${esc(det)}\n\nConviene responder una sola vez. Clic para ir al siguiente." onclick="document.getElementById('msg-${otros[0].id}')?.scrollIntoView({behavior:'smooth', block:'center'})">🔁 ${otros.length} más</span>`;
+}
 function _repetidos(m) {
   if (!m.autor) return '';
   const otros = MSG.filter(x => x.id !== m.id && x.estado === 'pendiente' && (x.autor || '').toLowerCase() === m.autor.toLowerCase());
@@ -786,28 +834,28 @@ function _tarjetaMensaje(m, l) {
       ${viejo ? '<span class="tag hora" title="Lleva más de 2 horas sin respuesta">⏰ más de 2 h</span>' : ''}
       ${precio && esPend ? '<span class="tag precio" title="Pregunta precio: oportunidad de venta">💲 Pregunta precio</span>' : ''}
       ${ofens ? '<span class="tag ofens" title="Insultos, burla o spam detectados: sugerimos ocultarlo">⚠ Parece ofensivo</span>' : ''}
+      ${_repetidosTag(m)}
       <div class="acciones-sec">${m.autor ? `<button class="btn ghost" onclick="verHistorial(${m.id})" title="Ver qué escribió antes esta persona y qué le respondimos">🕓 Historial</button>` : ''}${link ? `<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener" title="${esCom ? 'Abrir la publicación' : 'Abrir en Instagram / Facebook'}">↗</a>` : ''}</div>
     </div>
     <div id="hist-${m.id}"></div>`;
   const cliente = `<div class="c-cliente">
       <div class="burbuja">${m.contexto ? `<div class="ctx">En la publicación: "${esc(m.contexto)}"${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver ↗</a>` : ''}</div>` : ''}${m.texto ? esc(m.texto) : ''}${_adjuntoHtml(m)}</div>
       ${m.post_imagen ? `<a class="post" href="${esc(m.post_url || m.post_imagen)}" target="_blank" rel="noopener" title="${esc(m.contexto || 'Ver publicación')}"><img src="${esc(m.post_imagen)}" alt="" loading="lazy"></a>` : ''}
-    </div>
-    ${_repetidos(m)}`;
+    </div>`;
   let respuesta = '', pie = '';
   if (esPend) {
     respuesta = `<div class="c-resp">
       <div class="titulo">Tu respuesta ${m.respuesta_sugerida ? (m.sugerencia_origen === 'claude' ? '<span class="sugerido" title="La redactó Claude en la voz de Clau (botón ✨ Mejorar respuestas): revisala y corregí lo que quieras">✨ redactada por Claude</span>' : '<span class="sugerido base" title="Sugerencia básica armada por el sistema. Tocá ✨ arriba para que Claude la redacte a medida">📋 sugerencia básica</span>') : '<span class="mini">(sin sugerencia: escribila o tocá ✨ arriba)</span>'}
-        <button class="btn ghost frases-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('abierto');this.classList.toggle('on')" title="Frases listas para pegar en la respuesta (horarios, WhatsApp, comprar online…)">⚡ Frases rápidas ▾</button></div>
-      <div class="frases">${FRASES.map(f => `<button class="chip-f" onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</button>`).join('')}</div>
+        <button class="btn ghost frases-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('abierto');this.classList.toggle('on')" title="Frases rápidas: textos listos para pegar en la respuesta (horarios, WhatsApp, comprar online…). Tocá para verlas, editarlas o crear una nueva." aria-label="Frases rápidas">⚡</button></div>
+      <div class="frases">${FRASES.map(f => `<span class="chip-f"><span onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</span><i onclick="editarFrase(${f.id})" title="Editar esta frase">✏️</i></span>`).join('')}<button class="chip-f nueva" onclick="editarFrase(0)" title="Crear una frase nueva">+ Nueva</button></div>
       <div class="${esCom ? 'dos' : ''}">
         <div class="caja">${esCom ? '<label>Pública, en el comentario</label>' : ''}<textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea></div>
         ${esCom ? `<div class="caja"><label>Privada, con el link del producto <span class="mini">(opcional)</span></label><textarea id="dm-${m.id}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores…">${esc(dmDefault)}</textarea></div>` : ''}
       </div>
     </div>`;
     pie = ofens
-      ? `<div class="c-foot"><button class="btn primary peligro" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 Ocultar</button><button class="btn" onclick="enviarMensaje(${m.id})">Responder igual</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button><span class="mini">La persona no se entera</span></div>`
-      : `<div class="c-foot"><button class="btn primary" onclick="enviarMensaje(${m.id})">📤 Enviar</button><button class="btn" onclick="estadoMensaje(${m.id}, 'ignorado')">Ignorar</button>${esCom ? `<button class="btn" onclick="ocultarComentario(${m.id})" title="Lo oculta en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}: la persona lo sigue viendo, el resto no">🙈 <span class="lbl">Ocultar</span></button>` : ''}${esCom && precio ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`;
+      ? `<div class="c-foot"><button class="btn primary peligro ico" onclick="ocultarComentario(${m.id})" title="Ocultar: lo esconde en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}. La persona lo sigue viendo, el resto no." aria-label="Ocultar">🙈</button><button class="btn ico" onclick="enviarMensaje(${m.id})" title="Responder igual: manda la respuesta escrita" aria-label="Responder igual">📤</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: lo saca de la bandeja sin responder" aria-label="Ignorar">🚫</button><span class="mini">Sugerimos ocultarlo: la persona no se entera</span></div>`
+      : `<div class="c-foot"><button class="btn primary ico" onclick="enviarMensaje(${m.id})" title="Enviar: manda la respuesta (y el privado, si lo escribiste). Sale en menos de 1 minuto." aria-label="Enviar">📤</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: lo saca de la bandeja sin responder (queda en Ignorados)" aria-label="Ignorar">🚫</button>${esCom ? `<button class="btn ico" onclick="ocultarComentario(${m.id})" title="Ocultar: lo esconde en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}. La persona lo sigue viendo, el resto no." aria-label="Ocultar">🙈</button>` : ''}${esCom && precio ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>`;
   } else {
     const estado = m.estado === 'ocultar' ? `<span class="tag tipo">⏳ Se oculta en menos de 1 minuto</span> <button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar</button>`
       : m.estado === 'oculto' ? `<span class="tag tipo">🙈 Oculto ${fechaCorta(m.oculto_at)} · solo lo ve quien lo escribió</span>`
@@ -1000,9 +1048,9 @@ async function estadoTarea(id, estado) {
   await cargarTareas(); renderTareas();
 }
 // Las subventanas se cierran SOLO con ✕ / Cancelar / Escape (regla JP): nunca clickeando afuera.
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); cerrarFrase(); } });
 
 </script>
-<script src="manual.js?v=12"></script>
+<script src="manual.js?v=13"></script>
 </body>
 </html>
