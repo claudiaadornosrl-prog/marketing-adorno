@@ -237,6 +237,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
   .c-cliente .post { width: 64px; height: 64px; }
   .c-foot { position: sticky; bottom: 0; box-shadow: 0 -4px 12px rgba(0,0,0,.06); z-index: 2; } .c-foot .btn.primary { flex: 1; } .c-foot > .mini { display: none; }
   .c-foot .btn.ico { width: 44px !important; height: 44px !important; font-size: 21px !important; } .c-foot .btn.ico svg { width: 28px !important; height: 28px !important; }
+  .c-foot.con-buscador { grid-template-columns: 1fr; } .c-foot .catbox { order: -1; width: 100%; }
 }
 /* (v29, JP) escritorio ancho: los privados van de a dos por fila (son tarjetas chicas); los comentarios, con su casilla de privado, a todo el ancho */
 @media (min-width: 1000px) {
@@ -244,7 +245,6 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
   .dm-run .card { break-inside: avoid; display: inline-block; width: 100%; vertical-align: top; margin-bottom: 14px; }
   .dm-run .card:last-child { margin-bottom: 0; }
   .card.dm textarea { min-height: 88px; } .card.dm .c-cliente { padding: 10px 12px; } .card.dm .c-resp { padding: 10px 12px 12px; }
-  .c-foot.con-buscador { grid-template-columns: 1fr; } .c-foot .catbox { order: -1; width: 100%; }
 }
 @keyframes reloj-gira { 0%, 70% { transform: rotate(0deg); } 85% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
 .reloj { display: inline-block; animation: reloj-gira 1.6s ease-in-out infinite; }
