@@ -202,8 +202,8 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .sugerido.base { background: #f1f5f9; color: #334155; }
 .tag.repe { background: var(--amber-bg); color: #92400e; cursor: pointer; }
 /* (v32, JP) botones del pie sin recuadro: solo el ícono; Enviar más grande. Hover con fondo suave */
-.c-foot .btn.ico, .c-foot .btn.primary.ico { background: transparent !important; border: none !important; color: inherit !important; font-size: 22px !important; line-height: 1 !important; height: auto !important; padding: 6px 10px !important; border-radius: 10px; cursor: pointer; }
-.c-foot .btn.primary.ico { padding: 4px 12px !important; color: var(--primary) !important; display: inline-flex; align-items: center; } .c-foot .btn.ico svg { display: block; width: 30px !important; height: 30px !important; min-width: 30px; flex: none; } .c-foot .btn.ico[aria-label="Responder igual"] { color: var(--primary) !important; } .c-foot .btn.ico:hover { background: #f1f5f9 !important; } .c-foot .btn.primary.ico:hover { background: var(--primary-bg) !important; }
+.c-foot .btn.ico, .c-foot .btn.primary.ico { background: transparent !important; border: none !important; color: inherit !important; font-size: 19px !important; line-height: 1 !important; width: 40px !important; height: 40px !important; padding: 0 !important; border-radius: 10px; cursor: pointer; display: inline-flex !important; align-items: center; justify-content: center; }
+.c-foot .btn.primary.ico { color: var(--primary) !important; } .c-foot .btn.ico svg { display: block; width: 26px !important; height: 26px !important; min-width: 26px; flex: none; } .c-foot .btn.ico[aria-label="Responder igual"] { color: var(--primary) !important; } .c-foot .btn.ico:hover { background: #f1f5f9 !important; } .c-foot .btn.primary.ico:hover { background: var(--primary-bg) !important; }
 .c-foot .btn.primary.peligro.ico:hover { background: var(--red-bg) !important; }
 /* cabecera de la pestaña: 🔄 y ✨ también sin recuadro */
 .filtros-resp { flex-wrap: nowrap; overflow-x: auto; gap: 8px; white-space: nowrap; } .filtros-resp label { flex: none; } .filtros-resp select { flex: none; }
@@ -233,7 +233,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
   .c-resp .dos { grid-template-columns: 1fr; } .card textarea { min-height: 96px; }
   .c-cliente .post { width: 64px; height: 64px; }
   .c-foot { position: sticky; bottom: 0; box-shadow: 0 -4px 12px rgba(0,0,0,.06); z-index: 2; } .c-foot .btn.primary { flex: 1; } .c-foot > .mini { display: none; }
-  .c-foot .btn.ico { padding: 8px 12px !important; font-size: 24px !important; } .c-foot .btn.primary.ico { font-size: 30px !important; flex: 0 0 auto; }
+  .c-foot .btn.ico { width: 44px !important; height: 44px !important; font-size: 21px !important; } .c-foot .btn.ico svg { width: 28px !important; height: 28px !important; }
 }
 /* (v29, JP) escritorio ancho: los privados van de a dos por fila (son tarjetas chicas); los comentarios, con su casilla de privado, a todo el ancho */
 @media (min-width: 1000px) {
