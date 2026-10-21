@@ -215,6 +215,12 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
   .c-cliente .post { width: 64px; height: 64px; }
   .c-foot { position: sticky; bottom: 0; box-shadow: 0 -4px 12px rgba(0,0,0,.06); z-index: 2; } .c-foot .btn.primary { flex: 1; } .c-foot > .mini { display: none; }
   .c-foot .btn { padding: 10px 12px; font-size: 14px; } .c-foot .btn .lbl { display: none; }
+}
+/* (v29, JP) escritorio ancho: los privados van de a dos por fila (son tarjetas chicas); los comentarios, con su casilla de privado, a todo el ancho */
+@media (min-width: 1000px) {
+  #m-lista { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  #m-lista .card { margin-bottom: 0; } #m-lista .card.com, #m-lista .empty { grid-column: 1 / -1; }
+  .card.dm textarea { min-height: 88px; } .card.dm .c-cliente { padding: 10px 12px; } .card.dm .c-resp { padding: 10px 12px 12px; }
   .c-foot .catbox { order: -1; width: 100%; flex: none; }
 }
 @keyframes reloj-gira { 0%, 70% { transform: rotate(0deg); } 85% { transform: rotate(180deg); } 100% { transform: rotate(180deg); } }
@@ -806,7 +812,7 @@ function _tarjetaMensaje(m, l) {
       : `<button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Volver a pendientes</button>`;
     pie = `<div class="c-foot estado">${estado}</div>`;
   }
-  return `<div class="card ${viejo ? 'urgente' : ''} ${ofens ? 'ofensiva' : ''}" id="msg-${m.id}">${cabecera}${cliente}${respuesta}${pie}</div>`;
+  return `<div class="card ${esCom ? 'com' : 'dm'} ${viejo ? 'urgente' : ''} ${ofens ? 'ofensiva' : ''}" id="msg-${m.id}">${cabecera}${cliente}${respuesta}${pie}</div>`;
 }
 function _nombre(a) { a = (a || '').trim(); return (a.includes(' ') && !a.includes('.') && !a.includes('_')) ? a.split(' ')[0] + ', ' : ''; }
 async function enviarMensaje(id) {
