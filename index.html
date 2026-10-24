@@ -192,7 +192,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .avatar { width: 36px; height: 36px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 12px; }
 .avatar.ig { background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af); } .avatar.fb { background: #1877f2; }
 .tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
-.tag.tipo { background: #f1f5f9; color: #334155; } .tag.hora { background: var(--amber-bg); color: #92400e; } .tag.precio { background: var(--green-bg); color: #166534; } .tag.ofens { background: var(--red-bg); color: #991b1b; }
+.tag.tipo { background: #f1f5f9; color: #334155; } .tag.hora { background: var(--amber-bg); color: #92400e; } .tag.vencido { background: #fee2e2; color: #991b1b; } .tag.precio { background: var(--green-bg); color: #166534; } .tag.ofens { background: var(--red-bg); color: #991b1b; }
 .c-head .acciones-sec { margin-left: auto; display: flex; gap: 4px; }
 .btn.ghost { border-color: transparent; color: var(--muted); text-decoration: none; } .btn.ghost:hover { background: #f1f5f9; }
 .c-cliente { display: flex; gap: 12px; padding: 12px 14px; background: #fafafa; }
@@ -888,6 +888,7 @@ function _tarjetaMensaje(m, l) {
   const viejo = esPend && (Date.now() - new Date(m.fecha)) > 72e5;
   const precio = m.oportunidad || /precio|cuanto|cuánto|valor|cuesta|price|how much|preço|quanto/i.test(m.texto || '');
   const ofens = m.ofensivo && esPend;
+  const vencido = esPend && !esCom && (Date.now() - new Date(m.fecha)) > 864e5;   // (24-oct) Meta solo deja responder un privado por API dentro de las 24 h
   const link = enlaceMensaje(m);
   const dmDefault = /precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? (_nombre(m.autor) || 'Hola, ') + '¡gracias por preguntar! Te paso el link para que veas el producto con el precio, las medidas y los colores disponibles: https://www.claudiaadorno.com/\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊' : '';
   const fechaCorta = f => f ? new Date(f).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : '';
@@ -898,6 +899,7 @@ function _tarjetaMensaje(m, l) {
       ${viejo ? '<span class="tag hora" title="Lleva más de 2 horas sin respuesta">⏰ más de 2 h</span>' : ''}
       ${precio && esPend ? '<span class="tag precio" title="Pregunta precio: oportunidad de venta">💲 Pregunta precio</span>' : ''}
       ${ofens ? '<span class="tag ofens" title="Insultos, burla o spam detectados: sugerimos ocultarlo">⚠ Parece ofensivo</span>' : ''}
+      ${vencido ? '<span class="tag vencido" title="Pasaron más de 24 h desde el mensaje: Meta no deja responder privados por API después de ese plazo. Si lo enviás va a dar error; contestalo desde la app de Instagram/Facebook (↗).">⏳ +24 h: responder desde la app</span>' : ''}
       ${_repetidosTag(m)}
       <div class="acciones-sec">${m.autor ? `<button class="btn ghost" onclick="verHistorial(${m.id})" title="Ver qué escribió antes esta persona y qué le respondimos">🕓 Historial</button>` : ''}${link ? `<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener" title="${esCom ? 'Abrir la publicación' : 'Abrir en Instagram / Facebook'}">↗</a>` : ''}</div>
     </div>
@@ -1116,6 +1118,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); cerrarFrase(); } });
 
 </script>
-<script src="manual.js?v=14"></script>
+<script src="manual.js?v=15"></script>
 </body>
 </html>
