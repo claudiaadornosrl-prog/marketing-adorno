@@ -360,7 +360,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
         <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option><option value="oculto">Ocultados</option></select>
         <button class="btn" id="btn-traer" onclick="pedirTraer()" title="Buscar ahora: el servidor va a Instagram y Facebook a traer mensajes y comentarios nuevos (si no, lo hace solo cada 10 min)" aria-label="Buscar mensajes nuevos">🔄</button>
         <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)" aria-label="Mejorar respuestas" style="font-size:16px;line-height:1;padding:6px 10px">✨</button>
-        <button class="btn primary ico bet" id="btn-enviar-todos" onclick="enviarTodos()" title="Enviar todos" aria-label="Enviar todas las respuestas escritas" disabled>${_icoEnviar()}<span class="n" id="bet-n"></span></button>
+        <button class="btn primary ico bet" id="btn-enviar-todos" onclick="enviarTodos()" title="Enviar todos" aria-label="Enviar todas las respuestas escritas" disabled><span class="n" id="bet-n"></span></button>
         <div class="stat" id="m-stat"></div>
       </div>
       <div id="m-lista"></div>
@@ -850,6 +850,7 @@ function _hace(f) { const h = (Date.now() - new Date(f)) / 36e5; return h < 1 ? 
 function renderMensajes() {
   const cu = M_CUENTA, red = document.getElementById('m-red').value, est = document.getElementById('m-estado').value, tipo = document.getElementById('m-tipo').value;
   _limpiarBorradores(); setTimeout(actualizarEnviarTodos, 0);
+  const bet = document.getElementById('btn-enviar-todos'); if (bet && !bet.querySelector('svg')) bet.insertAdjacentHTML('afterbegin', _icoEnviar());   // (v45) el header es HTML fijo: el ícono se inyecta acá
   document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('active', b.id === 'mt-' + cu));
   const l = MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && m.estado === est);
   const pend = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === cu);
