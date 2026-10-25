@@ -217,6 +217,8 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .c-foot .btn.primary.peligro.ico:hover { background: var(--red-bg) !important; }
 /* cabecera de la pestaña: 🔄 y ✨ también sin recuadro */
 .filtros-resp { flex-wrap: nowrap; overflow-x: auto; gap: 8px; white-space: nowrap; } .filtros-resp label { flex: none; } .filtros-resp select { flex: none; }
+.filtros-resp .bet { position: relative; width: 40px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; color: var(--primary); background: transparent; border: 0; } .filtros-resp .bet svg { width: 26px; height: 26px; } .filtros-resp .bet:disabled { opacity: .35; } .filtros-resp .bet .n { position: absolute; top: -4px; right: -4px; background: var(--primary); color: #fff; font-size: 11px; font-weight: 600; border-radius: 10px; padding: 0 5px; line-height: 16px; } .filtros-resp .bet .n:empty { display: none; }
+.c-resp textarea.editado { border-color: var(--primary); box-shadow: inset 3px 0 0 var(--primary); }
 .filtros-resp .stat { margin-left: auto; flex: 1 1 auto; min-width: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: var(--muted); }
 @media (max-width: 760px) { .filtros-resp .stat { display: none; } }
 #btn-traer, #btn-mejorar { background: transparent !important; border: none !important; color: inherit !important; font-size: 20px !important; padding: 4px 8px !important; border-radius: 10px; } #btn-traer:hover, #btn-mejorar:hover { background: #f1f5f9 !important; }
@@ -358,6 +360,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
         <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option><option value="oculto">Ocultados</option></select>
         <button class="btn" id="btn-traer" onclick="pedirTraer()" title="Buscar ahora: el servidor va a Instagram y Facebook a traer mensajes y comentarios nuevos (si no, lo hace solo cada 10 min)" aria-label="Buscar mensajes nuevos">🔄</button>
         <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)" aria-label="Mejorar respuestas" style="font-size:16px;line-height:1;padding:6px 10px">✨</button>
+        <button class="btn primary ico bet" id="btn-enviar-todos" onclick="enviarTodos()" title="Enviar todos" aria-label="Enviar todas las respuestas escritas" disabled>${_icoEnviar()}<span class="n" id="bet-n"></span></button>
         <div class="stat" id="m-stat"></div>
       </div>
       <div id="m-lista"></div>
@@ -846,6 +849,7 @@ function enlaceMensaje(m) {
 function _hace(f) { const h = (Date.now() - new Date(f)) / 36e5; return h < 1 ? `hace ${Math.round(h * 60)} min` : h < 48 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} días`; }
 function renderMensajes() {
   const cu = M_CUENTA, red = document.getElementById('m-red').value, est = document.getElementById('m-estado').value, tipo = document.getElementById('m-tipo').value;
+  _limpiarBorradores(); setTimeout(actualizarEnviarTodos, 0);
   document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('active', b.id === 'mt-' + cu));
   const l = MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && m.estado === est);
   const pend = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === cu);
@@ -916,8 +920,8 @@ function _tarjetaMensaje(m, l) {
         <button class="btn ghost frases-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('abierto');this.classList.toggle('on')" title="Frases rápidas: textos listos para pegar en la respuesta (horarios, WhatsApp, comprar online…). Tocá para verlas, editarlas o crear una nueva." aria-label="Frases rápidas">⚡</button></div>
       <div class="frases">${FRASES.map(f => `<span class="chip-f"><span onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</span><i onclick="editarFrase(${f.id})" title="Editar esta frase">✏️</i></span>`).join('')}<button class="chip-f nueva" onclick="editarFrase(0)" title="Crear una frase nueva">+ Nueva</button></div>
       <div class="${esCom ? 'dos' : ''}">
-        <div class="caja">${esCom ? '<label>Pública, en el comentario</label>' : ''}<textarea id="resp-${m.id}" placeholder="Escribí la respuesta…">${esc(m.respuesta_sugerida || '')}</textarea></div>
-        ${esCom ? `<div class="caja"><label>Privada, con el link del producto <span class="mini">(opcional)</span></label><textarea id="dm-${m.id}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores…">${esc(dmDefault)}</textarea></div>` : ''}
+        <div class="caja">${esCom ? '<label>Pública, en el comentario</label>' : ''}<textarea id="resp-${m.id}" class="${_borr(m.id).t != null ? 'editado' : ''}" placeholder="Escribí la respuesta…" oninput="guardarBorrador(${m.id}, 't', this)">${esc(_borr(m.id).t ?? (m.respuesta_sugerida || ''))}</textarea></div>
+        ${esCom ? `<div class="caja"><label>Privada, con el link del producto <span class="mini">(opcional)</span></label><textarea id="dm-${m.id}" class="${_borr(m.id).dm != null ? 'editado' : ''}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores…" oninput="guardarBorrador(${m.id}, 'dm', this)">${esc(_borr(m.id).dm ?? dmDefault)}</textarea></div>` : ''}
       </div>
     </div>`;
     pie = ofens
@@ -935,6 +939,55 @@ function _tarjetaMensaje(m, l) {
   return `<div class="card ${esCom ? 'com' : 'dm'} ${m.plataforma === 'instagram' ? 'ig' : 'fb'} ${viejo ? 'urgente' : ''} ${ofens ? 'ofensiva' : ''}" id="msg-${m.id}">${cabecera}${cliente}${respuesta}${pie}</div>`;
 }
 function _nombre(a) { a = (a || '').trim(); return (a.includes(' ') && !a.includes('.') && !a.includes('_')) ? a.split(' ')[0] + ', ' : ''; }
+// ── (v44) Borradores: lo que escribís en cada tarjeta se guarda en el navegador y sobrevive al refresco, a cambiar de filtro y a cerrar la pestaña ──
+let BORR = {}; try { BORR = JSON.parse(localStorage.getItem('mk_borradores') || '{}'); } catch (e) { BORR = {}; }
+function _borr(id) { return BORR[id] || {}; }
+function guardarBorrador(id, campo, el) {
+  BORR[id] = Object.assign(BORR[id] || {}, { [campo]: el.value });
+  el.classList.add('editado');
+  try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+  actualizarEnviarTodos();
+}
+function _limpiarBorradores() {   // borra los borradores de mensajes que ya no están pendientes
+  let cambio = false;
+  for (const id of Object.keys(BORR)) { const m = MSG.find(x => x.id === Number(id)); if (!m || m.estado !== 'pendiente') { delete BORR[id]; cambio = true; } }
+  if (cambio) try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+}
+// ── (v44) Enviar todos: manda de una vez todas las respuestas de la vista actual (cuenta + red + tipo) ──
+function _candidatosEnviarTodos() {
+  const cu = M_CUENTA, red = document.getElementById('m-red').value, tipo = document.getElementById('m-tipo').value;
+  return MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && m.estado === 'pendiente')
+    .map(m => {
+      const b = _borr(m.id), t = (b.t ?? (document.getElementById('resp-' + m.id)?.value) ?? m.respuesta_sugerida ?? '').trim();
+      const dm = m.tipo === 'comentario' ? ((b.dm ?? document.getElementById('dm-' + m.id)?.value ?? '').trim() || null) : null;
+      const vencido = m.tipo === 'dm' && (Date.now() - new Date(m.fecha)) > 864e5;
+      return { m, t, dm, editado: b.t != null, vencido };
+    }).filter(x => x.t && !x.vencido);
+}
+function actualizarEnviarTodos() {
+  const b = document.getElementById('btn-enviar-todos'); if (!b) return;
+  const c = _candidatosEnviarTodos(), ed = c.filter(x => x.editado).length;
+  const n = document.getElementById('bet-n'); if (n) n.textContent = c.length || '';
+  b.disabled = !c.length;
+  b.title = c.length ? `Enviar todos: manda las ${c.length} respuestas que están escritas en esta vista (${ed} que editaste${c.length - ed ? ` y ${c.length - ed} sugerencias sin tocar` : ''}). Antes te pide confirmar.` : 'Enviar todos: no hay respuestas escritas en esta vista';
+}
+async function enviarTodos() {
+  const c = _candidatosEnviarTodos(); if (!c.length) { toast('No hay respuestas escritas', 'error'); return; }
+  const ed = c.filter(x => x.editado).length, sug = c.length - ed;
+  const nDm = c.filter(x => x.m.tipo === 'dm').length, nCo = c.length - nDm;
+  if (!confirm(`¿Enviar ${c.length} respuestas de una vez?\n\n${nCo} comentarios y ${nDm} mensajes privados.\n${ed} las escribiste o corregiste vos${sug ? `; ${sug} son sugerencias que no tocaste y salen tal cual` : ''}.\n\nSalen en menos de 1 minuto.`)) return;
+  const b = document.getElementById('btn-enviar-todos'); b.disabled = true;
+  let ok = 0;
+  for (const x of c) {
+    const { error } = await sb.from('marketing_mensajes').update({ respuesta: x.t, respuesta_dm: x.dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', x.m.id).eq('estado', 'pendiente');
+    if (!error) { ok++; delete BORR[x.m.id]; }
+  }
+  try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+  const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'enviar').in('estado', ['pendiente', 'en_curso']).limit(1);
+  if (!(ab && ab.length)) await sb.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
+  toast(`✓ ${ok} respuestas en camino (menos de 1 minuto)`); await cargarMensajes(); renderMensajes();
+  clearTimeout(window._envTimer); window._envTimer = setTimeout(() => cargarMensajes().then(renderMensajes), 70000);
+}
 async function enviarMensaje(id) {
   const t = (document.getElementById('resp-' + id)?.value || '').trim(); if (!t) { toast('Escribí la respuesta', 'error'); return; }
   const dm = (document.getElementById('dm-' + id)?.value || '').trim() || null;
@@ -943,6 +996,7 @@ async function enviarMensaje(id) {
   // (v13) pedido 'enviar': el servidor la manda en menos de un minuto (si no, igual sale con el cron de 10 min)
   const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'enviar').in('estado', ['pendiente', 'en_curso']).limit(1);
   if (!(ab && ab.length)) await sb.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
+  delete BORR[id]; try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
   toast('✓ Enviando (menos de 1 minuto)'); await cargarMensajes(); renderMensajes();
   clearTimeout(window._envTimer); window._envTimer = setTimeout(() => cargarMensajes().then(renderMensajes), 70000);
 }
@@ -1118,6 +1172,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); cerrarFrase(); } });
 
 </script>
-<script src="manual.js?v=15"></script>
+<script src="manual.js?v=16"></script>
 </body>
 </html>
