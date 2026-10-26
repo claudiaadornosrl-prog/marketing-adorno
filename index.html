@@ -1014,7 +1014,7 @@ function renderMensajes() {
   _limpiarBorradores(); setTimeout(actualizarEnviarTodos, 0);
   const bet = document.getElementById('btn-enviar-todos'); if (bet && !bet.querySelector('svg')) bet.insertAdjacentHTML('afterbegin', _icoEnviar());   // (v45) el header es HTML fijo: el ícono se inyecta acá
   document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('active', b.id === 'mt-' + cu));
-  const l = MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && m.estado === est);
+  const l = MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && (m.estado === est || (est === 'para_enviar' && m.estado === 'enviando')));   // (v48) 'enviando' = la está mandando el servidor
   const pend = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === cu);
   const nDm = pend.filter(m => m.tipo === 'dm').length, nCo = pend.length - nDm, nVi = pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5).length;
   const st = document.getElementById('m-stat'); st.textContent = `${pend.length} sin responder · ${nDm} priv. · ${nCo} com.${nVi ? ` · ⏰ ${nVi}` : ''}`;
