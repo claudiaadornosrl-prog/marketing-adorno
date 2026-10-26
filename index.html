@@ -229,7 +229,9 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .card { border-color: #d9dee6; } .card.ig .c-head { background: linear-gradient(90deg, #fdf2f8, #fff7ed); border-bottom: 2px solid #f0abfc; } .card.fb .c-head { background: #eff6ff; border-bottom: 2px solid #93c5fd; }
 .card.urgente .c-head { border-bottom-color: #f59e0b; } .card.ofensiva .c-head { border-bottom-color: #fca5a5; }
 .c-cliente { border-bottom: 1px solid #eef1f5; } .c-foot { background: #f8fafc; border-top: 1px solid #e5e9ef; }
-.c-resp .frases-btn { font-size: 16px; padding: 2px 8px; }
+.c-resp .frases-btn { font-size: 16px; padding: 2px 8px; } .c-resp .emoji-btn { font-size: 16px; padding: 2px 8px; } .c-resp .emoji-btn.on { background: var(--primary-bg); }
+.c-resp .titulo { position: relative; } .emoji-pop { position: absolute; z-index: 20; top: 100%; right: 0; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: 6px; display: grid; grid-template-columns: repeat(8, 32px); gap: 2px; } .emoji-pop button { border: 0; background: transparent; font-size: 20px; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; } .emoji-pop button:hover { background: #f3f4f6; }
+@media (max-width: 760px) { .emoji-pop { grid-template-columns: repeat(6, 32px); right: auto; left: 0; } }
 .c-resp .frases .chip-f { display: inline-flex; align-items: center; gap: 4px; padding: 3px 6px 3px 10px; } .c-resp .frases .chip-f > span { cursor: pointer; } .c-resp .frases .chip-f i { font-style: normal; font-size: 11px; opacity: .55; cursor: pointer; padding: 0 2px; } .c-resp .frases .chip-f i:hover { opacity: 1; }
 .c-resp .frases .chip-f.nueva { border-style: dashed; color: var(--primary); cursor: pointer; }
 #fr-overlay label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 10px; } #fr-overlay input:not([type=hidden]), #fr-overlay textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; font-family: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
@@ -660,10 +662,12 @@ let CAT = null, CAT_OF = null;
 async function cargarCatalogo() {   // de a 1000 (tope de PostgREST por pedido)
   if (CAT) return; CAT = []; CAT_OF = [];
   for (let i = 0; i < 5; i++) { const { data } = await sb.from('marketing_catalogo').select('producto_id, handle, titulo, precio, imagen, url, estado, sku').eq('estado', 'active').order('titulo').range(i * 1000, i * 1000 + 999); CAT = CAT.concat(data || []); if (!data || data.length < 1000) break; }
-  for (let i = 0; i < 5; i++) { const { data } = await sb.from('marketing_catalogo_oficial').select('id, categoria, titulo, codigos, precio, imagen, url, detalle').order('titulo').range(i * 1000, i * 1000 + 999); CAT_OF = CAT_OF.concat(data || []); if (!data || data.length < 1000) break; }
+  for (let i = 0; i < 5; i++) { const { data } = await sb.from('marketing_catalogo_oficial').select('id, categoria, titulo, codigos, precio, precio_max, imagen, url, detalle').order('titulo').range(i * 1000, i * 1000 + 999); CAT_OF = CAT_OF.concat(data || []); if (!data || data.length < 1000) break; }
   const porId = new Map(CAT_OF.map(p => [String(p.id), p]));
   CAT.forEach(p => { const id = ((p.handle || '').match(/-(\d+)$/) || [])[1]; p.oficial = id ? porId.get(id) : null; });
 }
+function _varios(p) { return p && p.precio_max != null && p.precio != null && Number(p.precio_max) > Number(p.precio); }   // (v47) variantes con precios distintos
+function _precioTxt(p) { return !p || !p.precio ? '' : _varios(p) ? `${plata(p.precio)} a ${plata(p.precio_max)}` : plata(p.precio); }
 function _norm(t) { return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 async function buscarProducto(id, q) {
   await cargarCatalogo();
@@ -671,20 +675,20 @@ async function buscarProducto(id, q) {
   const n = _norm(q).trim(); if (n.length < 2) { box.innerHTML = ''; return; }
   // web oficial primero (tiene link); después los del atelier que no están en la web
   const of = CAT_OF.filter(p => _norm(p.titulo).includes(n) || _norm(p.codigos).includes(n) || String(p.id) === n || _norm(p.categoria).includes(n)).slice(0, 8)
-    .map(p => ({ key: 'of:' + p.id, titulo: p.titulo, precio: p.precio, imagen: p.imagen, sub: [p.categoria, p.codigos].filter(Boolean).join(' · '), tag: 'web' }));
+    .map(p => ({ key: 'of:' + p.id, titulo: p.titulo, precio: p.precio, precio_max: p.precio_max, imagen: p.imagen, sub: [p.categoria, p.codigos].filter(Boolean).join(' · '), tag: 'web' }));
   const vistos = new Set(of.map(p => p.key));
   const at = CAT.filter(p => _norm(p.titulo).includes(n) || _norm(p.handle).includes(n) || _norm(p.sku).includes(n))
-    .map(p => p.oficial ? { key: 'of:' + p.oficial.id, titulo: p.oficial.titulo, precio: p.oficial.precio || p.precio, imagen: p.oficial.imagen, sub: [p.oficial.categoria, p.oficial.codigos, p.sku].filter(Boolean).join(' · '), tag: 'web' }
+    .map(p => p.oficial ? { key: 'of:' + p.oficial.id, titulo: p.oficial.titulo, precio: p.oficial.precio || p.precio, precio_max: p.oficial.precio_max, imagen: p.oficial.imagen, sub: [p.oficial.categoria, p.oficial.codigos, p.sku].filter(Boolean).join(' · '), tag: 'web' }
                         : { key: 'at:' + p.handle, titulo: p.titulo, precio: p.precio, imagen: p.imagen, sub: p.sku || '', tag: 'atelier' })
     .filter(p => !vistos.has(p.key) && vistos.add(p.key)).slice(0, Math.max(0, 8 - of.length));
   const l = of.concat(at);
-  box.innerHTML = l.length ? l.map(p => `<div class="cat-item" onclick="elegirProducto(${id}, '${esc(p.key)}')">${p.imagen ? `<img src="${esc(p.imagen)}" alt="">` : '<span class="cat-noimg"></span>'}<span>${esc(p.titulo)}${p.precio ? ' · ' + plata(p.precio) : ' · sin precio'}${p.sub ? ` <span class="mini">· ${esc(p.sub)}</span>` : ''} <span class="mini" title="${p.tag === 'web' ? 'Está en www.claudiaadorno.com: se manda el link del producto' : 'Solo en la tienda del atelier (aún con contraseña): se manda la portada de la web'}">${p.tag === 'web' ? '🌐' : '🔒'}</span></span></div>`).join('') : '<div class="mini" style="padding:4px">Sin resultados en los catálogos.</div>';
+  box.innerHTML = l.length ? l.map(p => `<div class="cat-item" onclick="elegirProducto(${id}, '${esc(p.key)}')">${p.imagen ? `<img src="${esc(p.imagen)}" alt="">` : '<span class="cat-noimg"></span>'}<span>${esc(p.titulo)}${p.precio ? ' · ' + _precioTxt(p) : ' · sin precio'}${p.sub ? ` <span class="mini">· ${esc(p.sub)}</span>` : ''} <span class="mini" title="${p.tag === 'web' ? 'Está en www.claudiaadorno.com: se manda el link del producto' : 'Solo en la tienda del atelier (aún con contraseña): se manda la portada de la web'}">${p.tag === 'web' ? '🌐' : '🔒'}</span></span></div>`).join('') : '<div class="mini" style="padding:4px">Sin resultados en los catálogos.</div>';
 }
 function elegirProducto(id, key) {
   let p, link, nota;
   if (key.startsWith('of:')) {
     const o = CAT_OF.find(x => String(x.id) === key.slice(3)); if (!o) return;
-    p = o; link = o.url; nota = '✓ ' + o.titulo + ' · link de www.claudiaadorno.com';
+    p = o; link = o.url; nota = '✓ ' + o.titulo + ' · link de www.claudiaadorno.com' + (_varios(o) ? ' · tiene variantes con precios distintos: el mensaje va sin precio' : '');
   } else {
     const a = CAT.find(x => x.handle === key.slice(3)); if (!a) return;
     p = a; link = a.oficial ? a.oficial.url : (TIENDA_PUBLICA ? a.url : 'https://www.claudiaadorno.com/');
@@ -692,7 +696,7 @@ function elegirProducto(id, key) {
   }
   const dm = document.getElementById('dm-' + id) || document.getElementById('resp-' + id); if (!dm) return;
   const m = MSG.find(x => x.id === id);
-  dm.value = `${_nombre(m?.autor) || 'Hola, '}¡gracias por preguntar! Te paso el link de ${p.titulo}${p.precio ? ' (' + plata(p.precio) + ')' : ''} con las medidas y los colores disponibles: ${link}\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊`;
+  dm.value = `${_nombre(m?.autor) || 'Hola, '}¡gracias por preguntar! Te paso el link de ${p.titulo}${_varios(p) ? ' con el precio de cada medida/color, las medidas y los colores disponibles' : (p.precio ? ' (' + plata(p.precio) + ')' : '') + ' con las medidas y los colores disponibles'}: ${link}\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊`;
   document.getElementById('cat-' + id).innerHTML = '';
   document.getElementById('catq-' + id).value = '';
   toast(nota);
@@ -894,10 +898,12 @@ function _tarjetaMensaje(m, l) {
   const esPend = m.estado === 'pendiente', esCom = m.tipo === 'comentario';
   const viejo = esPend && (Date.now() - new Date(m.fecha)) > 72e5;
   const precio = m.oportunidad || /precio|cuanto|cuánto|valor|cuesta|price|how much|preço|quanto/i.test(m.texto || '');
+  // (v47) consulta de producto (medidas, colores, material, stock, modelo…): también muestra el buscador para armar el privado con el link
+  const consulta = precio || /medid|tama[ñn]o|talle|color|material|de qu[eé] es|viene|vienen|tienen|ten[eé]s|hay stock|stock|disponib|queen|king|twin|\bcm\b|mide|modelo|lo tienen|lo ten[eé]s|me pas|info\b|informaci|link|d[oó]nde lo consigo|lo venden|catalogo|cat[aá]logo/i.test(m.texto || '');
   const ofens = m.ofensivo && esPend;
   const vencido = esPend && !esCom && (Date.now() - new Date(m.fecha)) > 864e5;   // (24-oct) Meta solo deja responder un privado por API dentro de las 24 h
   const link = enlaceMensaje(m);
-  const dmDefault = /precio|cuanto|cuánto|valor|sale|cuesta|info/i.test(m.texto || '') ? (_nombre(m.autor) || 'Hola, ') + '¡gracias por preguntar! Te paso el link para que veas el producto con el precio, las medidas y los colores disponibles: https://www.claudiaadorno.com/\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊' : '';
+  const dmDefault = consulta ? (_nombre(m.autor) || 'Hola, ') + '¡gracias por preguntar! Te paso el link para que veas el producto con el precio, las medidas y los colores disponibles: https://www.claudiaadorno.com/\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊' : '';
   const fechaCorta = f => f ? new Date(f).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : '';
   const cabecera = `<div class="c-head">
       <div class="avatar ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}">${_iconoRed(m.plataforma)}</div>
@@ -920,16 +926,16 @@ function _tarjetaMensaje(m, l) {
   if (esPend) {
     respuesta = `<div class="c-resp">
       <div class="titulo">Tu respuesta ${m.respuesta_sugerida ? (m.sugerencia_origen === 'claude' ? '<span class="sugerido" title="La redactó Claude en la voz de Clau (botón ✨ Mejorar respuestas): revisala y corregí lo que quieras">✨ redactada por Claude</span>' : '<span class="sugerido base" title="Sugerencia básica armada por el sistema. Tocá ✨ arriba para que Claude la redacte a medida">📋 sugerencia básica</span>') : '<span class="mini">(sin sugerencia: escribila o tocá ✨ arriba)</span>'}
-        <button class="btn ghost frases-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('abierto');this.classList.toggle('on')" title="Frases rápidas: textos listos para pegar en la respuesta (horarios, WhatsApp, comprar online…). Tocá para verlas, editarlas o crear una nueva." aria-label="Frases rápidas">⚡</button></div>
+        <button class="btn ghost frases-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('abierto');this.classList.toggle('on')" title="Frases rápidas: textos listos para pegar en la respuesta (horarios, WhatsApp, comprar online…). Tocá para verlas, editarlas o crear una nueva." aria-label="Frases rápidas">⚡</button><button class="btn ghost emoji-btn" onclick="abrirEmojis(${m.id}, this)" title="Emojis: tocá uno y se pega donde está el cursor (en el último cuadro que tocaste)" aria-label="Emojis">😊</button></div>
       <div class="frases">${FRASES.map(f => `<span class="chip-f"><span onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</span><i onclick="editarFrase(${f.id})" title="Editar esta frase">✏️</i></span>`).join('')}<button class="chip-f nueva" onclick="editarFrase(0)" title="Crear una frase nueva">+ Nueva</button></div>
       <div class="${esCom ? 'dos' : ''}">
-        <div class="caja">${esCom ? '<label>Pública, en el comentario</label>' : ''}<textarea id="resp-${m.id}" class="${_borr(m.id).t != null ? 'editado' : ''}" placeholder="Escribí la respuesta…" oninput="guardarBorrador(${m.id}, 't', this)">${esc(_borr(m.id).t ?? (m.respuesta_sugerida || ''))}</textarea></div>
-        ${esCom ? `<div class="caja"><label>Privada, con el link del producto <span class="mini">(opcional)</span></label><textarea id="dm-${m.id}" class="${_borr(m.id).dm != null ? 'editado' : ''}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores…" oninput="guardarBorrador(${m.id}, 'dm', this)">${esc(_borr(m.id).dm ?? dmDefault)}</textarea></div>` : ''}
+        <div class="caja">${esCom ? '<label>Pública, en el comentario</label>' : ''}<textarea id="resp-${m.id}" class="${_borr(m.id).t != null ? 'editado' : ''}" placeholder="Escribí la respuesta…" oninput="guardarBorrador(${m.id}, 't', this)" onfocus="_ultimoTA[${m.id}] = this">${esc(_borr(m.id).t ?? (m.respuesta_sugerida || ''))}</textarea></div>
+        ${esCom ? `<div class="caja"><label>Privada, con el link del producto <span class="mini">(opcional)</span></label><textarea id="dm-${m.id}" class="${_borr(m.id).dm != null ? 'editado' : ''}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores…" oninput="guardarBorrador(${m.id}, 'dm', this)" onfocus="_ultimoTA[${m.id}] = this">${esc(_borr(m.id).dm ?? dmDefault)}</textarea></div>` : ''}
       </div>
     </div>`;
     pie = ofens
       ? `<div class="c-foot"><button class="btn primary peligro ico" onclick="ocultarComentario(${m.id})" title="Ocultar: lo esconde en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}. La persona lo sigue viendo, el resto no." aria-label="Ocultar">🙈</button><button class="btn ico" onclick="enviarMensaje(${m.id})" title="Responder igual: manda la respuesta escrita" aria-label="Responder igual">${_icoEnviar()}</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: lo saca de la bandeja sin responder" aria-label="Ignorar">🚫</button><span class="mini">Sugerimos ocultarlo: la persona no se entera</span></div>`
-      : `<div class="c-foot ${precio ? 'con-buscador' : ''}"><div class="acciones"><button class="btn primary ico" onclick="enviarMensaje(${m.id})" title="Enviar: manda la respuesta (y el privado, si lo escribiste). Sale en menos de 1 minuto." aria-label="Enviar">${_icoEnviar()}</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: lo saca de la bandeja sin responder (queda en Ignorados)" aria-label="Ignorar">🚫</button>${esCom ? `<button class="btn ico" onclick="ocultarComentario(${m.id})" title="Ocultar: lo esconde en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}. La persona lo sigue viendo, el resto no." aria-label="Ocultar">🙈</button>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>${precio ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}</div>`;
+      : `<div class="c-foot ${consulta ? 'con-buscador' : ''}"><div class="acciones"><button class="btn primary ico" onclick="enviarMensaje(${m.id})" title="Enviar: manda la respuesta (y el privado, si lo escribiste). Sale en menos de 1 minuto." aria-label="Enviar">${_icoEnviar()}</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: lo saca de la bandeja sin responder (queda en Ignorados)" aria-label="Ignorar">🚫</button>${esCom ? `<button class="btn ico" onclick="ocultarComentario(${m.id})" title="Ocultar: lo esconde en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}. La persona lo sigue viendo, el resto no." aria-label="Ocultar">🙈</button>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>${consulta ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}</div>`;
   } else {
     const estado = m.estado === 'ocultar' ? `<span class="tag tipo">⏳ Se oculta en menos de 1 minuto</span> <button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar</button>`
       : m.estado === 'oculto' ? `<span class="tag tipo">🙈 Oculto ${fechaCorta(m.oculto_at)} · solo lo ve quien lo escribió</span>`
@@ -951,6 +957,27 @@ function guardarBorrador(id, campo, el) {
   try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
   actualizarEnviarTodos();
 }
+// ── (v47) Emojis: popover chico con los que usa Clau; se pegan donde está el cursor del último cuadro tocado ──
+const _ultimoTA = {};
+const EMOJIS = ['😊', '🥰', '❤️', '✨', '🙌', '🙏', '💐', '🌸', '🌿', '🏡', '🛋️', '☕', '🎁', '🎀', '👏', '😍', '🤗', '😉', '🙂', '💫', '🔥', '👌', '🌟', '🕯️'];
+function abrirEmojis(id, btn) {
+  document.querySelectorAll('.emoji-pop').forEach(x => x.remove());
+  if (btn.classList.contains('on')) { btn.classList.remove('on'); return; }
+  document.querySelectorAll('.emoji-btn.on').forEach(x => x.classList.remove('on'));
+  btn.classList.add('on');
+  const pop = document.createElement('div'); pop.className = 'emoji-pop';
+  pop.innerHTML = EMOJIS.map(e => `<button type="button" onclick="pegarEmoji(${id}, '${e}')" title="${e}">${e}</button>`).join('');
+  btn.insertAdjacentElement('afterend', pop);
+}
+function pegarEmoji(id, e) {
+  const ta = (_ultimoTA[id] && document.body.contains(_ultimoTA[id])) ? _ultimoTA[id] : document.getElementById('resp-' + id);
+  if (!ta) return;
+  const a = ta.selectionStart ?? ta.value.length, b = ta.selectionEnd ?? a;
+  ta.value = ta.value.slice(0, a) + e + ta.value.slice(b);
+  ta.focus(); ta.selectionStart = ta.selectionEnd = a + e.length;
+  ta.dispatchEvent(new Event('input'));   // guarda el borrador
+}
+document.addEventListener('click', ev => { if (!ev.target.closest('.emoji-pop') && !ev.target.closest('.emoji-btn')) { document.querySelectorAll('.emoji-pop').forEach(x => x.remove()); document.querySelectorAll('.emoji-btn.on').forEach(x => x.classList.remove('on')); } });
 function toggleIncluir(id, on) {   // (v46) casilla por tarjeta: sin tilde, "Enviar todos" la saltea
   BORR[id] = Object.assign(BORR[id] || {}, { incluir: on });
   try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
@@ -1182,6 +1209,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); cerrarFrase(); } });
 
 </script>
-<script src="manual.js?v=17"></script>
+<script src="manual.js?v=18"></script>
 </body>
 </html>
