@@ -272,6 +272,13 @@ window.ADORNO_SSO = (function () {
 .box .form { padding: 14px 16px; } .box-pie { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); }
 textarea { font-family: inherit; font-size: 14px; padding: 8px; border: 1px solid var(--border); border-radius: 8px; width: 100%; box-sizing: border-box; }
 .chip { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+.avatar.gg { background: #fff; border: 1px solid #e2e8f0; }
+.card.gg .c-head { background: linear-gradient(90deg, #eff6ff, #fefce8); border-bottom: 2px solid #fcd34d; }
+.tag.estr { background: #fef3c7; color: #b45309; letter-spacing: 1px; } .tag.estr.mala { background: #fee2e2; color: #b91c1c; }
+.estrellas { color: #f59e0b; letter-spacing: 1px; white-space: nowrap; }
+.g-local .n { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; } .g-local .n .estrellas { font-size: 15px; } .g-local a { color: var(--primary); }
+.g-spark { display: block; margin-top: 6px; }
+.estr-off { opacity: .25; }
 </style>
 <style>
 @font-face { font-family: 'URW Gothic'; src: url('fonts/URWGothic-Book.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
@@ -515,6 +522,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
       </div>
       <div id="t-kpis" class="kpis"></div>
       <div class="card"><h3>🛍 Tienda online (Shopify) · por día</h3><div id="t-shopify"></div></div>
+      <div class="card"><h3>⭐ Opiniones de Google · por local</h3><div id="t-google" class="mini">Sin datos todavía.</div></div>
       <div class="grid2">
         <div class="card"><h3>📷 Instagram · Facebook</h3><div id="t-redes" class="mini">Sin datos todavía.</div></div>
         <div class="card"><h3>📣 Pauta (Meta Ads · Google Ads)</h3><div id="t-pauta" class="mini">Todavía no hay datos. Cuando haya campañas, acá se ve gasto, clicks y costo por venta.</div></div>
@@ -542,8 +550,8 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
     <section id="content-respuestas" class="tab-content">
       <div class="filters filtros-resp">
         <div class="subtabs"><button id="mt-atelier" class="active" onclick="cuentaMensajes('atelier')">Atelier <span class="count" id="mc-atelier"></span></button><button id="mt-oficial" onclick="cuentaMensajes('oficial')">Claudia Adorno <span class="count" id="mc-oficial"></span></button></div>
-        <label>Red</label><select id="m-red" onchange="renderMensajes()"><option value="">IG + FB</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option></select>
-        <label>Tipo</label><select id="m-tipo" onchange="renderMensajes()"><option value="">Todo</option><option value="dm">Mensajes privados</option><option value="comentario">Comentarios</option></select>
+        <label>Red</label><select id="m-red" onchange="renderMensajes()"><option value="">Todas</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option><option value="google">Google (reseñas)</option></select>
+        <label>Tipo</label><select id="m-tipo" onchange="renderMensajes()"><option value="">Todo</option><option value="dm">Mensajes privados</option><option value="comentario">Comentarios</option><option value="resena">Reseñas de Google</option></select>
         <label>Ver</label><select id="m-estado" onchange="renderMensajes()"><option value="pendiente">Sin responder</option><option value="para_enviar">Por enviar</option><option value="enviado">Enviados</option><option value="error">Con error</option><option value="ignorado">Ignorados</option><option value="oculto">Ocultados</option></select>
         <button class="btn" id="btn-traer" onclick="pedirTraer()" title="Buscar ahora: el servidor va a Instagram y Facebook a traer mensajes y comentarios nuevos (si no, lo hace solo cada 10 min)" aria-label="Buscar mensajes nuevos">🔄</button>
         <button class="btn primary" id="btn-mejorar" onclick="pedirRedaccion()" title="Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)" aria-label="Mejorar respuestas" style="font-size:16px;line-height:1;padding:6px 10px">✨</button>
@@ -761,7 +769,7 @@ function renderTablero() {
   document.getElementById('t-kpis').innerHTML = _kpi('Sesiones en la tienda', ses, sesP) + _kpi('Agregaron al carrito', car, carP) + _kpi('Pedidos', ped, pedP) + _kpi('Ventas netas', ven, venP, true)
     + (ultCat('productos_sin_precio') !== null ? `<div class="kpi"><div class="l">Activos sin precio</div><div class="n" style="color:var(--red)">${ultCat('productos_sin_precio')}</div><div class="d">de ${ultCat('productos_activos')} productos activos</div></div>` : '');
   // (lote 2) tiempo de respuesta en redes, últimos 30 días: desde que escribieron hasta que se envió desde acá
-  const env = MSG.filter(m => m.estado === 'enviado' && m.enviado_at && (Date.now() - new Date(m.fecha)) < 30 * 864e5);
+  const env = MSG.filter(m => m.plataforma !== 'google' && m.estado === 'enviado' && m.enviado_at && (Date.now() - new Date(m.fecha)) < 30 * 864e5);
   const horas = env.map(m => (new Date(m.enviado_at) - new Date(m.fecha)) / 36e5).filter(h => h >= 0 && h < 24 * 30);
   const prom = horas.length ? horas.reduce((a, b) => a + b, 0) / horas.length : null, rapidos = horas.length ? Math.round(horas.filter(h => h <= 2).length / horas.length * 100) : null;
   document.getElementById('t-kpis').innerHTML += prom === null ? '' : `<div class="kpi"><div class="l">Tiempo de respuesta en redes</div><div class="n">${prom < 1 ? Math.round(prom * 60) + ' min' : prom.toFixed(1) + ' h'}</div><div class="d">${rapidos}% respondidos en menos de 2 h · ${horas.length} respuestas en 30 días</div></div>`;
@@ -778,6 +786,7 @@ function renderTablero() {
   if (!serie.some(x => x.s || x.p)) h = '<div class="empty">Sin datos de Shopify para este período.</div>';
   document.getElementById('t-shopify').innerHTML = h;
   renderRedes(r, d1, d2, p1, p2);
+  renderGoogle(d1);
 }
 // (v3) Instagram / Facebook por cuenta (dimension = atelier, oficial…). Seguidores = último valor; alcance/interacciones = suma del período.
 function renderRedes(r, d1, d2, p1, p2) {
@@ -801,14 +810,106 @@ function renderRedes(r, d1, d2, p1, p2) {
   document.getElementById('t-redes').innerHTML = h;
 }
 
+// ── (v49, 28-oct) Reseñas de Google por local · fase 1 (Places API): el servidor lee rating, cantidad y hasta 5 reseñas por local
+// 4 veces por día; las nuevas entran a esta bandeja (plataforma 'google', tipo 'resena') y el redactor arma el borrador.
+// Google todavía no deja responder por API: se copia la respuesta, se publica en Google y se marca ✓ acá.
+const NOM_LOCAL = { alcorta: 'Alcorta Shopping', unicenter: 'Unicenter', atelier: 'Atelier' };
+function _nomRed(p) { return { instagram: 'Instagram', facebook: 'Facebook', google: 'Google' }[p] || p; }
+function _abrRed(p) { return { instagram: 'IG', facebook: 'FB', google: 'Google' }[p] || p; }
+function _clsRed(p) { return { instagram: 'ig', facebook: 'fb', google: 'gg' }[p] || 'fb'; }
+function _nomTipo(t) { return { dm: 'privado', comentario: 'comentario', resena: 'reseña' }[t] || t; }
+function _estrellas(n) { n = Math.max(0, Math.min(5, Math.round(Number(n) || 0))); return '★'.repeat(n) + '☆'.repeat(5 - n); }
+function _estrellasHtml(n, prom) { n = Math.max(0, Math.min(5, prom ? Math.floor((Number(n) || 0) + 0.25) : Math.round(Number(n) || 0))); return `<span class="estr-on">${'★'.repeat(n)}</span><span class="estr-off">${'★'.repeat(5 - n)}</span>`; }
+function _burbujaResena(m, esAviso) {
+  const loc = esc(NOM_LOCAL[m.local] || m.local || '');
+  if (esAviso) return `<div class="ctx">Reseña de Google · ${loc}</div><i>Entró una reseña nueva, pero Google no pasa el texto por la API (muestra solo 5 por local). Abrila en Google con ↗ para leerla y responderla ahí; después tocá ✓ acá.</i>`;
+  return `<div class="ctx">Reseña de Google · ${loc}${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver en Google ↗</a>` : ''}</div>${m.texto ? '' : '<i>Solo puso estrellas, sin comentario.</i>'}`;
+}
+function _icoCopiar() { return '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>'; }
+function _icoCheck() { return '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#16a34a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16 10"/></svg>'; }
+function _pieResena(m) {
+  return `<div class="c-foot"><div class="acciones"><button class="btn primary ico" onclick="copiarYAbrir(${m.id})" title="Copiar y abrir en Google: copia tu respuesta y abre la reseña en Google Maps. Ahí tocás Responder, pegás (Ctrl+V) y publicás. Google todavía no deja responder desde acá." aria-label="Copiar y abrir en Google">${_icoCopiar()}</button><button class="btn ico" onclick="marcarPublicada(${m.id})" title="Ya la publiqué en Google: la pasa a Enviados con el texto del cuadro" aria-label="Ya la publiqué">${_icoCheck()}</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: la saca de la bandeja sin responder (queda en Ignorados)" aria-label="Ignorar">🚫</button><span class="mini">Se publica en Google: copiá, pegá allá y tocá ✓</span></div></div>`;
+}
+async function copiarYAbrir(id) {
+  const m = MSG.find(x => x.id === id), ta = document.getElementById('resp-' + id); if (!m || !ta) return;
+  const t = ta.value.trim(); if (!t) { toast('Escribí la respuesta', 'error'); return; }
+  try { await navigator.clipboard.writeText(t); } catch (e) { ta.select(); document.execCommand('copy'); }
+  window.open(m.post_url || 'https://www.google.com/maps', '_blank', 'noopener');
+  toast('📋 Respuesta copiada. En Google tocá Responder, pegá con Ctrl+V y publicá. Después volvé y tocá ✓');
+}
+async function marcarPublicada(id) {
+  const m = MSG.find(x => x.id === id), t = (document.getElementById('resp-' + id)?.value || '').trim();
+  if (!t && !(m && (m.externo_id || '').startsWith('aviso-'))) { toast('Falta el texto que publicaste en Google', 'error'); return; }
+  const { error } = await sb.from('marketing_mensajes').update({ respuesta: t || null, estado: 'enviado', respondido: true, enviado_por: session.email, enviado_at: new Date().toISOString() }).eq('id', id).eq('estado', 'pendiente');
+  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  delete BORR[id]; try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+  toast('✓ Marcada como publicada en Google'); await cargarMensajes(); renderMensajes();
+}
+function _verResenas(k) {
+  switchTab('respuestas');
+  document.getElementById('m-red').value = 'google'; document.getElementById('m-tipo').value = ''; document.getElementById('m-estado').value = 'pendiente';
+  cuentaMensajes(k === 'atelier' ? 'atelier' : 'oficial');
+}
+function _kpiGoogleHoy() {
+  const G = MET.filter(m => m.fuente === 'google' && m.metrica === 'rating');
+  const locs = Object.keys(NOM_LOCAL).filter(k => G.some(m => m.dimension === k));
+  const pend = MSG.filter(m => m.plataforma === 'google' && m.estado === 'pendiente').length;
+  if (!locs.length && !pend) return '';
+  const r = k => { const x = G.filter(m => m.dimension === k).sort((a, b) => a.fecha.localeCompare(b.fecha)).pop(); return x ? Number(x.valor).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '—'; };
+  return `<div class="kpi" style="cursor:pointer" onclick="${pend ? "_verResenas('alcorta')" : "_irA('tablero')"}" title="${pend ? 'Ver las reseñas sin responder' : 'Ver las opiniones de Google en el Tablero'}"><div class="l">Reseñas de Google</div><div class="n" style="color:${pend ? 'var(--red)' : 'var(--primary)'}">${pend}</div><div class="d">sin responder${locs.length ? ' · ' + locs.map(k => `${NOM_LOCAL[k].split(' ')[0]} ${r(k)}★`).join(' · ') : ''}</div></div>`;
+}
+function _sparkRating(pts) {
+  if (pts.length < 2) return '';
+  const v = pts.map(p => Number(p.valor)), mn = Math.min(...v) - 0.1, mx = Math.max(...v) + 0.1, W = 160, H = 34;
+  const xy = v.map((y, i) => `${(i / (v.length - 1) * W).toFixed(1)},${(H - (y - mn) / (mx - mn) * H).toFixed(1)}`).join(' ');
+  const f = x => x.split('-').reverse().slice(0, 2).join('/');
+  return `<svg class="g-spark" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none"><title>Rating del ${f(pts[0].fecha)} al ${f(pts[pts.length - 1].fecha)}: ${v[0]} a ${v[v.length - 1]}</title><polyline points="${xy}" fill="none" stroke="#f59e0b" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+function renderGoogle(d1) {
+  const box = document.getElementById('t-google'); if (!box) return;
+  const G = MET.filter(m => m.fuente === 'google');
+  const locs = Object.keys(NOM_LOCAL).filter(k => G.some(m => m.dimension === k && m.metrica === 'resenas'));
+  if (!locs.length) { box.innerHTML = '<div class="mini">Todavía no hay lecturas de Google. Arranca cuando esté activa la clave de Places: el servidor lee cada local 4 veces por día.</div>'; return; }
+  const f2 = f => f.split('-').reverse().slice(0, 2).join('/'), uno = x => Number(x).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  let h = '<div class="kpis" style="margin:0 0 8px">';
+  for (const k of locs) {
+    const ser = met => G.filter(m => m.dimension === k && m.metrica === met).sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const rat = ser('rating'), cnt = ser('resenas');
+    const ini = cnt.filter(m => m.fecha < d1).pop() || cnt[0], ult = cnt[cnt.length - 1];
+    const rIni = rat.filter(m => m.fecha <= ini.fecha).pop() || rat[0], rUlt = rat[rat.length - 1];
+    const nuevas = Number(ult.valor) - Number(ini.valor), dr = rUlt && rIni ? Number(rUlt.valor) - Number(rIni.valor) : 0;
+    const desde = ini.fecha < d1 ? 'en el período' : `desde el ${f2(ini.fecha)}`;
+    const pend = MSG.filter(m => m.plataforma === 'google' && m.local === k && m.estado === 'pendiente').length;
+    const maps = (ult.extra || {}).maps;
+    h += `<div class="kpi g-local"><div class="l">${esc(NOM_LOCAL[k])}</div>
+      <div class="n">${rUlt ? uno(rUlt.valor) : '—'} <span class="estrellas">${_estrellasHtml(rUlt ? rUlt.valor : 0, true)}</span></div>
+      <div class="d">${Number(ult.valor).toLocaleString('es-AR')} reseñas · ${nuevas > 0 ? '+' + nuevas : nuevas === 0 ? 'ninguna nueva' : nuevas} ${desde}</div>
+      <div class="d ${dr >= 0.05 ? 'up' : dr <= -0.05 ? 'down' : ''}">${Math.abs(dr) < 0.05 ? 'Rating estable' : (dr > 0 ? '▲ ' : '▼ ') + uno(Math.abs(dr)) + ' de rating'} ${desde}</div>
+      <div class="d">${pend ? `<a href="#" onclick="_verResenas('${k}');return false;">${pend} sin responder</a>` : 'Todo respondido'}${maps ? ` · <a href="${esc(maps)}" target="_blank" rel="noopener">ver en Google ↗</a>` : ''}</div>
+      ${_sparkRating(rat.filter(m => m.fecha >= d1))}</div>`;
+  }
+  h += '</div>';
+  const lista = MSG.filter(m => m.plataforma === 'google' && !(m.externo_id || '').startsWith('aviso-') && m.fecha.slice(0, 10) >= d1).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  if (lista.length) {
+    const dist = [5, 4, 3, 2, 1].map(n => `${n}★ ${lista.filter(m => m.estrellas === n).length}`).join(' · ');
+    h += `<div class="mini">Reseñas del período que llegaron a la bandeja (Google pasa hasta 5 por local): ${dist}</div>`
+      + `<table><tr><th>Fecha</th><th>Local</th><th>Estrellas</th><th>Quién</th><th>Estado</th></tr>` + lista.slice(0, 15).map(m => `<tr><td>${m.fecha.slice(0, 10).split('-').reverse().join('/')}</td><td>${esc(NOM_LOCAL[m.local] || m.local || '')}</td><td class="estrellas">${_estrellasHtml(m.estrellas)}</td><td>${esc(m.autor || '')}</td><td>${m.estado === 'enviado' ? '✓ respondida' : m.estado === 'pendiente' ? '⏳ sin responder' : esc(m.estado)}</td></tr>`).join('') + '</table>';
+  }
+  const ultLect = G.map(m => (m.extra || {}).leido_at).filter(Boolean).sort().pop();
+  h += `<div class="mini" style="margin-top:6px">${ultLect ? 'Última lectura: ' + new Date(ultLect).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' : ''}Google se lee 4 veces por día (8, 12, 16 y 20 h).</div>`;
+  box.innerHTML = h;
+}
+
 // ── Respuestas (bandeja IG/FB) ──
 let MSG = [], M_CUENTA = localStorage.getItem('mk_cuenta_msg') || 'atelier';
 const NOM_CUENTA = { atelier: 'Atelier', oficial: 'Claudia Adorno' };
 function cuentaMensajes(c) { M_CUENTA = c; try { localStorage.setItem('mk_cuenta_msg', c); } catch (_) {} renderMensajes(); }
 async function cargarMensajes() {
-  const { data, error } = await sb.from('marketing_mensajes').select('*').order('fecha', { ascending: false }).limit(300);
+  const [r1, r2] = await Promise.all([sb.from('marketing_mensajes').select('*').order('fecha', { ascending: false }).limit(300),
+    sb.from('marketing_mensajes').select('*').or('estado.eq.pendiente,plataforma.eq.google').order('fecha', { ascending: false }).limit(300)]);   // (v49) que un pendiente o una reseña vieja no quede afuera del tope
+  const error = r1.error || r2.error;
   if (error) { toast('Error mensajes: ' + error.message, 'error'); return; }
-  MSG = data || [];
+  const vistos = new Set(); MSG = [...(r1.data || []), ...(r2.data || [])].filter(m => !vistos.has(m.id) && vistos.add(m.id)).sort((a, b) => b.fecha.localeCompare(a.fecha));
   const n = MSG.filter(m => m.estado === 'pendiente').length;
   const c = document.getElementById('cnt-respuestas'); if (c) { c.textContent = n ? String(n) : ''; c.title = n ? `${n} sin responder` : ''; }
   for (const k of ['atelier', 'oficial']) { const e = document.getElementById('mc-' + k), x = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === k).length; if (e) e.textContent = x ? String(x) : ''; }
@@ -828,8 +929,9 @@ function renderHoy() {
     + `<div class="kpi"><div class="l">Respondidos hoy</div><div class="n">${enviadosHoy}</div><div class="d">${dms} privados y ${precios} consultas de precio esperan</div></div>`
     + `<div class="kpi" style="cursor:pointer" onclick="_irA('descripciones')"><div class="l">Descripciones por aprobar</div><div class="n">${desc}</div><div class="d">${descErr ? descErr + ' con error' : 'para la tienda del atelier'}</div></div>`
     + `<div class="kpi" style="cursor:pointer" onclick="_irA('web')"><div class="l">Tareas pendientes</div><div class="n">${tP.length}</div><div class="d">${tAlta} de prioridad alta</div></div>`;
+  document.getElementById('hoy-cards').innerHTML += _kpiGoogleHoy();
   const items = [];
-  viejos.slice(0, 5).forEach(m => items.push(`<div class="fila"><div class="prio p1"></div><div class="cuerpo"><div class="t">${esc(m.autor || 'desconocido')} espera hace ${_hace(m.fecha).replace('hace ', '')}</div><div class="s">${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'} · ${m.tipo === 'dm' ? 'privado' : 'comentario'} · ${esc(NOM_CUENTA[m.cuenta] || m.cuenta)}: ${esc((m.texto || '📎 multimedia').slice(0, 90))}</div></div><div class="acc"><button class="btn primary" onclick="_irA('respuestas', () => { cuentaMensajes('${m.cuenta}'); setTimeout(() => document.getElementById('msg-${m.id}')?.scrollIntoView({behavior:'smooth'}), 100); })">Responder</button></div></div>`));
+  viejos.slice(0, 5).forEach(m => items.push(`<div class="fila"><div class="prio p1"></div><div class="cuerpo"><div class="t">${esc(m.autor || 'desconocido')} espera hace ${_hace(m.fecha).replace('hace ', '')}</div><div class="s">${_nomRed(m.plataforma)} · ${_nomTipo(m.tipo)}${m.local ? ' · ' + esc(NOM_LOCAL[m.local] || m.local) : ''} · ${esc(NOM_CUENTA[m.cuenta] || m.cuenta)}: ${esc((m.texto || (m.plataforma === 'google' ? (m.estrellas ? _estrellas(m.estrellas) : 'reseña sin texto') : '📎 multimedia')).slice(0, 90))}</div></div><div class="acc"><button class="btn primary" onclick="_irA('respuestas', () => { cuentaMensajes('${m.cuenta}'); setTimeout(() => document.getElementById('msg-${m.id}')?.scrollIntoView({behavior:'smooth'}), 100); })">Responder</button></div></div>`));
   if (pend.length > viejos.length) items.push(`<div class="fila"><div class="prio p2"></div><div class="cuerpo"><div class="t">${pend.length - viejos.length} mensajes recientes sin responder</div><div class="s">Llegaron hace menos de 2 horas.</div></div><div class="acc"><button class="btn" onclick="_irA('respuestas')">Ver</button></div></div>`);
   if (desc) items.push(`<div class="fila"><div class="prio p2"></div><div class="cuerpo"><div class="t">${desc} descripciones de productos esperan aprobación</div><div class="s">Claude las redactó con la identidad del atelier; aprobá, corregí o descartá.</div></div><div class="acc"><button class="btn" onclick="_irA('descripciones')">Revisar</button></div></div>`);
   tP.filter(t => t.prioridad === 1).slice(0, 3).forEach(t => items.push(`<div class="fila"><div class="prio p1"></div><div class="cuerpo"><div class="t">${esc(t.titulo)}</div><div class="s">${esc((t.detalle || '').slice(0, 140))}</div></div><div class="acc"><button class="btn" onclick="_irA('web')">Ver</button></div></div>`));
@@ -893,7 +995,7 @@ async function verHistorial(id) {
   if (box.innerHTML) { box.innerHTML = ''; return; }
   box.innerHTML = '<div class="mini">Buscando…</div>';
   const { data } = await sb.from('marketing_mensajes').select('id, plataforma, tipo, cuenta, texto, respuesta, estado, fecha, enviado_at').ilike('autor', m.autor).neq('id', id).order('fecha', { ascending: false }).limit(20);
-  box.innerHTML = (data && data.length) ? `<div class="hist"><div class="mini" style="font-weight:600">Lo anterior con ${esc(m.autor)} (${data.length}):</div>` + data.map(h => `<div class="hist-it"><span class="mini">${h.fecha.slice(0, 10).split('-').reverse().join('/')} · ${h.plataforma === 'instagram' ? 'IG' : 'FB'} ${h.tipo === 'dm' ? 'privado' : 'comentario'} · ${esc(NOM_CUENTA[h.cuenta] || h.cuenta)}</span><div>${esc(h.texto || '📎')}</div>${h.respuesta ? `<div class="hist-r">↳ ${esc(h.respuesta)}</div>` : h.estado === 'ignorado' ? '<div class="hist-r mini">↳ (ignorado)</div>' : '<div class="hist-r mini">↳ sin responder</div>'}</div>`).join('') + '</div>' : '<div class="mini">Es la primera vez que escribe.</div>';
+  box.innerHTML = (data && data.length) ? `<div class="hist"><div class="mini" style="font-weight:600">Lo anterior con ${esc(m.autor)} (${data.length}):</div>` + data.map(h => `<div class="hist-it"><span class="mini">${h.fecha.slice(0, 10).split('-').reverse().join('/')} · ${_abrRed(h.plataforma)} ${_nomTipo(h.tipo)} · ${esc(NOM_CUENTA[h.cuenta] || h.cuenta)}</span><div>${esc(h.texto || '📎')}</div>${h.respuesta ? `<div class="hist-r">↳ ${esc(h.respuesta)}</div>` : h.estado === 'ignorado' ? '<div class="hist-r mini">↳ (ignorado)</div>' : '<div class="hist-r mini">↳ sin responder</div>'}</div>`).join('') + '</div>' : '<div class="mini">Es la primera vez que escribe.</div>';
 }
 
 // ── Frases guardadas (marketing_frases) ──
@@ -924,7 +1026,7 @@ async function guardarFrase(borrar) {
 function insertarFrase(id, fid) {
   const f = FRASES.find(x => x.id === fid), t = document.getElementById('resp-' + id); if (!f || !t) return;
   const base = t.value.replace(/\s*Clau\s*$/, '').trim();
-  t.value = (base ? base + ' ' : '') + f.texto + (MSG.find(m => m.id === id)?.tipo === 'comentario' ? ' Clau' : '');
+  t.value = (base ? base + ' ' : '') + f.texto + (['comentario', 'resena'].includes(MSG.find(m => m.id === id)?.tipo) ? ' Clau' : '');
   t.focus();
 }
 // ── Misma persona en varios lados (evita responder dos veces) ──
@@ -944,14 +1046,14 @@ function _repetidosTag(m) {
   if (!m.autor) return '';
   const otros = MSG.filter(x => x.id !== m.id && x.estado === 'pendiente' && (x.autor || '').toLowerCase() === m.autor.toLowerCase());
   if (!otros.length) return '';
-  const det = otros.map(x => `${x.plataforma === 'instagram' ? 'IG' : 'FB'} ${x.tipo === 'dm' ? 'privado' : 'comentario'} · ${_hace(x.fecha)}`).join('\n');
+  const det = otros.map(x => `${_abrRed(x.plataforma)} ${_nomTipo(x.tipo)} · ${_hace(x.fecha)}`).join('\n');
   return `<span class="tag repe" title="Esta persona también tiene ${otros.length} mensaje(s) más sin responder:\n${esc(det)}\n\nConviene responder una sola vez. Clic para ir al siguiente." onclick="document.getElementById('msg-${otros[0].id}')?.scrollIntoView({behavior:'smooth', block:'center'})">⚠ ${otros.length} más</span>`;
 }
 function _repetidos(m) {
   if (!m.autor) return '';
   const otros = MSG.filter(x => x.id !== m.id && x.estado === 'pendiente' && (x.autor || '').toLowerCase() === m.autor.toLowerCase());
   if (!otros.length) return '';
-  return `<div class="mini" style="color:#b45309">⚠ Esta persona también tiene ${otros.length} mensaje(s) más sin responder: ${otros.map(x => `<a href="#" onclick="document.getElementById('msg-${x.id}')?.scrollIntoView({behavior:'smooth'});return false;">${x.plataforma === 'instagram' ? 'IG' : 'FB'} ${x.tipo === 'dm' ? 'privado' : 'comentario'}</a>`).join(' · ')}. Conviene responder una sola vez.</div>`;
+  return `<div class="mini" style="color:#b45309">⚠ Esta persona también tiene ${otros.length} mensaje(s) más sin responder: ${otros.map(x => `<a href="#" onclick="document.getElementById('msg-${x.id}')?.scrollIntoView({behavior:'smooth'});return false;">${_abrRed(x.plataforma)} ${_nomTipo(x.tipo)}</a>`).join(' · ')}. Conviene responder una sola vez.</div>`;
 }
 // ── Lote: responder todos los comentarios pendientes de una misma publicación ──
 function _loteBtn(m, lista) {
@@ -1015,6 +1117,7 @@ async function pedirTraer() {
 const META_CTA = { atelier: { page: '1237095802824116', biz: '1364792082450561' }, oficial: { page: '183276558391685', biz: '398992653902545' } };
 // (v21) adjunto del cliente: foto / sticker → miniatura; audio → reproductor; video / archivo → link. Sin copia → texto de antes.
 function _adjuntoHtml(m) {
+  if (m.plataforma === 'google') return '';
   if (m.adjunto_url) {
     const u = esc(m.adjunto_url), t = m.adjunto_tipo || 'archivo';
     if (t === 'historia') return `<div class="adj"><div class="mini">${m.texto ? 'Respondió a tu historia:' : 'Reaccionó a tu historia con un emoji (Instagram no dice cuál):'}</div><a href="${u}" target="_blank" rel="noopener" title="Ver grande"><img src="${u}" alt="historia" loading="lazy" style="max-height:160px;max-width:100%;border-radius:8px;border:1px solid var(--border);display:block"></a></div>`;
@@ -1029,7 +1132,7 @@ function _adjuntoHtml(m) {
   return l ? `<a href="${esc(l)}" target="_blank" rel="noopener" title="Abrir en Meta"><i>📎 contenido que Instagram no deja leer por acá (publicación o reel compartido, reacción o nota de voz)</i></a>` : '<i>📎 contenido que Instagram no deja leer por acá (publicación o reel compartido, reacción o nota de voz)</i>';
 }
 function enlaceMensaje(m) {
-  if (m.tipo === 'comentario') return m.post_url || null;
+  if (m.tipo === 'comentario' || m.plataforma === 'google') return m.post_url || null;
   const c = META_CTA[m.cuenta]; if (!c || !m.conversacion_id) return null;
   // (v17, JP) Business Suite no permite abrir un chat puntual por link → Instagram: perfil de la persona; Facebook: bandeja Messenger de la cuenta
   if (m.plataforma === 'instagram') return m.autor ? `https://www.instagram.com/${encodeURIComponent(m.autor)}/` : `https://business.facebook.com/latest/inbox/instagram_direct?asset_id=${c.page}&business_id=${c.biz}`;
@@ -1043,8 +1146,8 @@ function renderMensajes() {
   document.querySelectorAll('.subtabs button').forEach(b => b.classList.toggle('active', b.id === 'mt-' + cu));
   const l = MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && (m.estado === est || (est === 'para_enviar' && m.estado === 'enviando')));   // (v48) 'enviando' = la está mandando el servidor
   const pend = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === cu);
-  const nDm = pend.filter(m => m.tipo === 'dm').length, nCo = pend.length - nDm, nVi = pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5).length;
-  const st = document.getElementById('m-stat'); st.textContent = `${pend.length} sin responder · ${nDm} priv. · ${nCo} com.${nVi ? ` · ⏰ ${nVi}` : ''}`;
+  const nDm = pend.filter(m => m.tipo === 'dm').length, nRe = pend.filter(m => m.tipo === 'resena').length, nCo = pend.length - nDm - nRe, nVi = pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5).length;
+  const st = document.getElementById('m-stat'); st.textContent = `${pend.length} sin responder · ${nDm} priv. · ${nCo} com.${nRe ? ` · ${nRe} reseñas` : ''}${nVi ? ` · ⏰ ${nVi}` : ''}`;
   st.title = `${pend.length} sin responder: ${nDm} mensajes privados y ${nCo} comentarios. ${nVi} llevan más de 2 horas esperando.`;
   // (v30) en escritorio los privados consecutivos se encastran en dos columnas tipo mosaico (sin huecos); cada comentario corta el mosaico y va a todo el ancho
   let html = '', run = [];
@@ -1073,35 +1176,36 @@ function _mosaicoDms() {
 // (v34, JP) Enviar = sobre de correo (SVG en el color del módulo; el emoji ✉️/📤 se veía recortado con la fuente)
 function _icoEnviar() { return '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>'; }
 function _iconoRed(p) {
+  if (p === 'google') return '<svg viewBox="0 0 24 24" width="22" height="22"><path fill="#4285F4" d="M22.6 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.6l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4z"/></svg>';
   return p === 'instagram'
     ? '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="#fff" stroke="none"/></svg>'
     : '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><path d="M13.5 22v-8h2.7l.4-3.2h-3.1V8.8c0-.9.3-1.6 1.6-1.6h1.7V4.4c-.3 0-1.3-.1-2.5-.1-2.5 0-4.1 1.5-4.1 4.2v2.3H7.4V14h2.8v8z"/></svg>';
 }
 function _tarjetaMensaje(m, l) {
-  const esPend = m.estado === 'pendiente', esCom = m.tipo === 'comentario';
+  const esPend = m.estado === 'pendiente', esCom = m.tipo === 'comentario', esGoo = m.plataforma === 'google', esAviso = esGoo && (m.externo_id || '').startsWith('aviso-');
   const viejo = esPend && (Date.now() - new Date(m.fecha)) > 72e5;
-  const precio = m.oportunidad || /precio|cuanto|cuánto|valor|cuesta|price|how much|preço|quanto/i.test(m.texto || '');
+  const precio = !esGoo && (m.oportunidad || /precio|cuanto|cuánto|valor|cuesta|price|how much|preço|quanto/i.test(m.texto || ''));
   // (v47) consulta de producto (medidas, colores, material, stock, modelo…): también muestra el buscador para armar el privado con el link
-  const consulta = precio || /medid|tama[ñn]o|talle|color|material|de qu[eé] es|viene|vienen|tienen|ten[eé]s|hay stock|stock|disponib|queen|king|twin|\bcm\b|mide|modelo|lo tienen|lo ten[eé]s|me pas|info\b|informaci|link|d[oó]nde lo consigo|lo venden|catalogo|cat[aá]logo/i.test(m.texto || '');
+  const consulta = precio || !esGoo && /medid|tama[ñn]o|talle|color|material|de qu[eé] es|viene|vienen|tienen|ten[eé]s|hay stock|stock|disponib|queen|king|twin|\bcm\b|mide|modelo|lo tienen|lo ten[eé]s|me pas|info\b|informaci|link|d[oó]nde lo consigo|lo venden|catalogo|cat[aá]logo/i.test(m.texto || '');
   const ofens = m.ofensivo && esPend;
-  const vencido = esPend && !esCom && (Date.now() - new Date(m.fecha)) > 864e5;   // (24-oct) Meta solo deja responder un privado por API dentro de las 24 h
+  const vencido = esPend && !esCom && !esGoo && (Date.now() - new Date(m.fecha)) > 864e5;   // (24-oct) Meta solo deja responder un privado por API dentro de las 24 h
   const link = enlaceMensaje(m);
   const dmDefault = consulta ? (_nombre(m.autor) || 'Hola, ') + '¡gracias por preguntar! Te paso el link para que veas el producto con el precio, las medidas y los colores disponibles: https://www.claudiaadorno.com/\n\nSi querés verlo en persona, lo tenés en Alcorta Shopping (todos los días de 10 a 21) y en Unicenter (todos los días de 10 a 22). Y si preferís que te asesoren por WhatsApp: Alcorta +54 9 11 6978-4643 · Unicenter +54 9 11 6978-4741.\n\nCualquier duda, me escribís por acá 😊' : '';
   const fechaCorta = f => f ? new Date(f).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) : '';
   const cabecera = `<div class="c-head">
-      <div class="avatar ${m.plataforma === 'instagram' ? 'ig' : 'fb'}" title="${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}">${_iconoRed(m.plataforma)}</div>
-      <div class="c-quien"><div class="quien">${esc(m.autor || 'desconocido')}</div><div class="meta">${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'} · ${_hace(m.fecha)}</div></div>
-      <span class="tag tipo">${esCom ? '💬 Comentario' : '✉️ Privado'}</span>
+      <div class="avatar ${_clsRed(m.plataforma)}" title="${_nomRed(m.plataforma)}">${_iconoRed(m.plataforma)}</div>
+      <div class="c-quien"><div class="quien">${esc(m.autor || 'desconocido')}</div><div class="meta">${_nomRed(m.plataforma)}${esGoo && m.local ? ' · ' + esc(NOM_LOCAL[m.local] || m.local) : ''} · ${_hace(m.fecha)}</div></div>
+      <span class="tag tipo">${esGoo ? '⭐ Reseña' : esCom ? '💬 Comentario' : '✉️ Privado'}</span>${esGoo && m.estrellas ? `<span class="tag estr ${m.estrellas <= 2 ? 'mala' : ''}" title="${m.estrellas} de 5 estrellas">${_estrellasHtml(m.estrellas)}</span>` : ''}
       ${viejo ? '<span class="tag hora" title="Lleva más de 2 horas sin respuesta">⏰ más de 2 h</span>' : ''}
       ${precio && esPend ? '<span class="tag precio" title="Pregunta precio: oportunidad de venta">💲 Pregunta precio</span>' : ''}
       ${ofens ? '<span class="tag ofens" title="Insultos, burla o spam detectados: sugerimos ocultarlo">⚠ Parece ofensivo</span>' : ''}
       ${vencido ? '<span class="tag vencido" title="Pasaron más de 24 h desde el mensaje: Meta no deja responder privados por API después de ese plazo. Si lo enviás va a dar error; contestalo desde la app de Instagram/Facebook (↗).">⏳ +24 h: responder desde la app</span>' : ''}
       ${_repetidosTag(m)}
-      <div class="acciones-sec">${esPend && !vencido ? `<label class="incluir" title="Tildado: entra cuando tocás Enviar todos. Sin tilde: queda afuera (lo respondés aparte o lo dejás para después)"><input type="checkbox" ${_borr(m.id).incluir === false ? '' : 'checked'} onchange="toggleIncluir(${m.id}, this.checked)"> <span>Enviar todos</span></label>` : ''}${m.autor ? `<button class="btn ghost" onclick="verHistorial(${m.id})" title="Ver qué escribió antes esta persona y qué le respondimos">🕓 Historial</button>` : ''}${link ? `<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener" title="${esCom ? 'Abrir la publicación' : 'Abrir en Instagram / Facebook'}">↗</a>` : ''}</div>
+      <div class="acciones-sec">${esPend && !vencido && !esGoo ? `<label class="incluir" title="Tildado: entra cuando tocás Enviar todos. Sin tilde: queda afuera (lo respondés aparte o lo dejás para después)"><input type="checkbox" ${_borr(m.id).incluir === false ? '' : 'checked'} onchange="toggleIncluir(${m.id}, this.checked)"> <span>Enviar todos</span></label>` : ''}${m.autor ? `<button class="btn ghost" onclick="verHistorial(${m.id})" title="Ver qué escribió antes esta persona y qué le respondimos">🕓 Historial</button>` : ''}${link ? `<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener" title="${esGoo ? 'Abrir la reseña en Google' : esCom ? 'Abrir la publicación' : 'Abrir en Instagram / Facebook'}">↗</a>` : ''}</div>
     </div>
     <div id="hist-${m.id}"></div>`;
   const cliente = `<div class="c-cliente">
-      <div class="burbuja">${m.contexto ? `<div class="ctx">En la publicación: "${esc(m.contexto)}"${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver ↗</a>` : ''}</div>` : ''}${m.texto ? esc(m.texto) : ''}${_adjuntoHtml(m)}</div>
+      <div class="burbuja">${esGoo ? _burbujaResena(m, esAviso) : m.contexto ? `<div class="ctx">En la publicación: "${esc(m.contexto)}"${m.post_url ? ` · <a href="${esc(m.post_url)}" target="_blank" rel="noopener">ver ↗</a>` : ''}</div>` : ''}${m.texto ? esc(m.texto) : ''}${_adjuntoHtml(m)}</div>
       ${m.post_imagen ? `<div class="post" onclick="verMedia(${m.id})" title="${m.post_media ? 'Tocá para ver la publicación acá mismo' : 'Ver publicación'}"><img src="${esc(m.post_imagen)}" alt="" loading="lazy">${m.post_media && /\.mp4|video/i.test(m.post_media) ? '<span class="play">▶</span>' : ''}</div>` : ''}
     </div>
     <div class="media-big" id="media-${m.id}"></div>`;
@@ -1112,23 +1216,23 @@ function _tarjetaMensaje(m, l) {
         <button class="btn ghost frases-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('abierto');this.classList.toggle('on')" title="Frases rápidas: textos listos para pegar en la respuesta (horarios, WhatsApp, comprar online…). Tocá para verlas, editarlas o crear una nueva." aria-label="Frases rápidas">⚡</button><button class="btn ghost emoji-btn" onclick="abrirEmojis(${m.id}, this)" title="Emojis: tocá uno y se pega donde está el cursor (en el último cuadro que tocaste)" aria-label="Emojis">😊</button></div>
       <div class="frases">${FRASES.map(f => `<span class="chip-f"><span onclick="insertarFrase(${m.id}, ${f.id})" title="${esc(f.texto)}">${esc(f.nombre)}</span><i onclick="editarFrase(${f.id})" title="Editar esta frase">✏️</i></span>`).join('')}<button class="chip-f nueva" onclick="editarFrase(0)" title="Crear una frase nueva">+ Nueva</button></div>
       <div class="${esCom ? 'dos' : ''}">
-        <div class="caja">${esCom ? '<label>Pública, en el comentario</label>' : ''}<textarea id="resp-${m.id}" class="${_borr(m.id).t != null ? 'editado' : ''}" placeholder="Escribí la respuesta…" oninput="guardarBorrador(${m.id}, 't', this)" onfocus="_ultimoTA[${m.id}] = this">${esc(_borr(m.id).t ?? (m.respuesta_sugerida || ''))}</textarea></div>
+        <div class="caja">${esCom ? '<label>Pública, en el comentario</label>' : esGoo ? '<label>Pública, debajo de la reseña en Google</label>' : ''}<textarea id="resp-${m.id}" class="${_borr(m.id).t != null ? 'editado' : ''}" placeholder="Escribí la respuesta…" oninput="guardarBorrador(${m.id}, 't', this)" onfocus="_ultimoTA[${m.id}] = this">${esc(_borr(m.id).t ?? (m.respuesta_sugerida || ''))}</textarea></div>
         ${esCom ? `<div class="caja"><label>Privada, con el link del producto <span class="mini">(opcional)</span></label><textarea id="dm-${m.id}" class="${_borr(m.id).dm != null ? 'editado' : ''}" placeholder="Ej: Alejandra, ¡gracias por preguntar! Te paso el link de las mantas con precio, medidas y colores…" oninput="guardarBorrador(${m.id}, 'dm', this)" onfocus="_ultimoTA[${m.id}] = this">${esc(_borr(m.id).dm ?? dmDefault)}</textarea></div>` : ''}
       </div>
     </div>`;
-    pie = ofens
+    pie = esGoo ? _pieResena(m) : ofens
       ? `<div class="c-foot"><button class="btn primary peligro ico" onclick="ocultarComentario(${m.id})" title="Ocultar: lo esconde en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}. La persona lo sigue viendo, el resto no." aria-label="Ocultar">🙈</button><button class="btn ico" onclick="enviarMensaje(${m.id})" title="Responder igual: manda la respuesta escrita" aria-label="Responder igual">${_icoEnviar()}</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: lo saca de la bandeja sin responder" aria-label="Ignorar">🚫</button><span class="mini">Sugerimos ocultarlo: la persona no se entera</span></div>`
       : `<div class="c-foot ${consulta ? 'con-buscador' : ''}"><div class="acciones"><button class="btn primary ico" onclick="enviarMensaje(${m.id})" title="Enviar: manda la respuesta (y el privado, si lo escribiste). Sale en menos de 1 minuto." aria-label="Enviar">${_icoEnviar()}</button><button class="btn ico" onclick="estadoMensaje(${m.id}, 'ignorado')" title="Ignorar: lo saca de la bandeja sin responder (queda en Ignorados)" aria-label="Ignorar">🚫</button>${esCom ? `<button class="btn ico" onclick="ocultarComentario(${m.id})" title="Ocultar: lo esconde en ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'}. La persona lo sigue viendo, el resto no." aria-label="Ocultar">🙈</button>` : ''}<span class="mini">Sale en menos de 1 minuto</span>${_loteBtn(m, l)}</div>${consulta ? `<div class="catbox"><input id="catq-${m.id}" placeholder="🔎 Buscar el producto por nombre, código o SKU…" oninput="buscarProducto(${m.id}, this.value)"><div id="cat-${m.id}" class="cat-res"></div></div>` : ''}</div>`;
   } else {
     const estado = m.estado === 'ocultar' ? `<span class="tag tipo">⏳ Se oculta en menos de 1 minuto</span> <button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar</button>`
       : m.estado === 'oculto' ? `<span class="tag tipo">🙈 Oculto ${fechaCorta(m.oculto_at)} · solo lo ve quien lo escribió</span>`
       : m.estado === 'para_enviar' ? `<div class="enviado-txt">⏳ <b>Por enviar:</b> ${esc(m.respuesta || '')}${m.respuesta_dm ? `<br>⏳ <b>+ privado:</b> ${esc(m.respuesta_dm)}` : ''}</div><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Cancelar envío</button>`
-      : m.estado === 'enviado' ? `<div class="enviado-txt">✓ <b>Enviado</b> ${fechaCorta(m.enviado_at)} por ${esc((m.enviado_por || '').split('@')[0])}: ${esc(m.respuesta || '')}${m.respuesta_dm ? `<br>${m.dm_enviado_at ? '✓' : '⏳'} <b>privado:</b> ${esc(m.respuesta_dm)}` : ''}</div>`
+      : m.estado === 'enviado' ? `<div class="enviado-txt">✓ <b>${esGoo ? 'Publicada en Google' : 'Enviado'}</b> ${fechaCorta(m.enviado_at)} por ${esc((m.enviado_por || '').split('@')[0])}: ${esc(m.respuesta || '')}${m.respuesta_dm ? `<br>${m.dm_enviado_at ? '✓' : '⏳'} <b>privado:</b> ${esc(m.respuesta_dm)}` : ''}</div>`
       : m.estado === 'error' ? `<div class="enviado-txt" style="color:var(--red)">✗ No se pudo enviar: ${esc(m.error || '')}</div><button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Reintentar</button>`
       : `<button class="btn" onclick="estadoMensaje(${m.id}, 'pendiente')">Volver a pendientes</button>`;
     pie = `<div class="c-foot estado">${estado}</div>`;
   }
-  return `<div class="card ${esCom ? 'com' : 'dm'} ${m.plataforma === 'instagram' ? 'ig' : 'fb'} ${viejo ? 'urgente' : ''} ${ofens ? 'ofensiva' : ''} ${_borr(m.id).incluir === false ? 'excluida' : ''}" id="msg-${m.id}">${cabecera}${cliente}${respuesta}${pie}</div>`;
+  return `<div class="card ${esCom || esGoo ? 'com' : 'dm'} ${_clsRed(m.plataforma)} ${viejo ? 'urgente' : ''} ${ofens ? 'ofensiva' : ''} ${_borr(m.id).incluir === false ? 'excluida' : ''}" id="msg-${m.id}">${cabecera}${cliente}${respuesta}${pie}</div>`;
 }
 function _nombre(a) { a = (a || '').trim(); return (a.includes(' ') && !a.includes('.') && !a.includes('_')) ? a.split(' ')[0] + ', ' : ''; }
 // ── (v44) Borradores: lo que escribís en cada tarjeta se guarda en el navegador y sobrevive al refresco, a cambiar de filtro y a cerrar la pestaña ──
@@ -1175,7 +1279,7 @@ function _limpiarBorradores() {   // borra los borradores de mensajes que ya no 
 // ── (v44) Enviar todos: manda de una vez todas las respuestas de la vista actual (cuenta + red + tipo) ──
 function _candidatosEnviarTodos() {
   const cu = M_CUENTA, red = document.getElementById('m-red').value, tipo = document.getElementById('m-tipo').value;
-  return MSG.filter(m => m.cuenta === cu && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && m.estado === 'pendiente')
+  return MSG.filter(m => m.cuenta === cu && m.plataforma !== 'google' && (!red || m.plataforma === red) && (!tipo || m.tipo === tipo) && m.estado === 'pendiente')
     .map(m => {
       const b = _borr(m.id), t = (b.t ?? (document.getElementById('resp-' + m.id)?.value) ?? m.respuesta_sugerida ?? '').trim();
       const dm = m.tipo === 'comentario' ? ((b.dm ?? document.getElementById('dm-' + m.id)?.value ?? '').trim() || null) : null;
@@ -1392,6 +1496,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); cerrarFrase(); } });
 
 </script>
-<script src="manual.js?v=18"></script>
+<script src="manual.js?v=19"></script>
 </body>
 </html>

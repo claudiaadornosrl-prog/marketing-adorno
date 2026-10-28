@@ -25,6 +25,7 @@ function _manualSecciones() {
         'Arriba, cuatro números: mensajes sin responder (rojo si alguno pasó las 2 horas), respondidos hoy, descripciones por aprobar y tareas pendientes. Tocando cada uno vas a la pestaña.',
         'Abajo, la lista de lo urgente: cada mensaje que espera hace más de 2 horas con su botón Responder, las descripciones, las tareas de prioridad alta y el último resumen semanal.',
         'El resumen semanal llega también al celular los lunes a las 8.',
+        'Cuando ya hay lecturas de Google aparece un quinto número: reseñas de Google sin responder, con el rating de cada local. Tocándolo vas directo a esas reseñas.',
       ],
     },
     {
@@ -35,6 +36,7 @@ function _manualSecciones() {
         'Tienda online (Shopify): sesiones, cuántos agregaron al carrito, pedidos y ventas. Los datos los trae solo el servidor todas las mañanas.',
         '"Activos sin precio" es la cantidad de productos que se ven en la tienda a $0: no se pueden comprar. Es la primera tarea de la pestaña Tareas.',
         'Instagram, Facebook y la pauta aparecen vacíos hasta que se conecten las cuentas (Meta Business Suite y Google Ads).',
+        'Opiniones de Google, por local: rating actual con estrellas, cantidad de reseñas, cuántas entraron en el período, si el rating subió o bajó, una línea con la evolución del rating y cuántas faltan responder. Abajo, la lista de las reseñas del período con sus estrellas y si ya se respondieron.',
       ],
     },
     {
@@ -68,6 +70,19 @@ function _manualSecciones() {
         'Ignorar lo saca de la lista (stickers, saludos, spam). Se puede volver a pendientes desde el filtro "Ignorados".',
         'Las imágenes, stickers y audios no se pueden leer por acá: se ven en la app de Instagram o Facebook.',
         'Si algo lleva más de 2 horas sin responder, la fila se marca en ámbar y a JP le llega un aviso al celular. El número naranja de la pestaña es la cantidad sin responder.',
+      ],
+    },
+    {
+      icon: '⭐', titulo: 'Reseñas de Google (Alcorta y Unicenter)',
+      desc: 'Las opiniones de Google de cada local entran a la misma bandeja de Respuestas, con la sugerencia de Claude lista.',
+      pasos: [
+        'El servidor mira Google 4 veces por día (8, 12, 16 y 20 h). Cuando entra una reseña nueva, a JP y a Rivera les llega un aviso al celular y aparece en Respuestas, cuenta Claudia Adorno, con el logo de Google, el local y las estrellas.',
+        'Para ver solo las reseñas: en Red elegí "Google (reseñas)" o en Tipo "Reseñas de Google".',
+        'La respuesta la redacta Claude con la voz de Clau: firma "Clau", sin precios y con el WhatsApp y el horario del local que corresponde. Revisala y corregí lo que quieras; también tenés emojis y frases rápidas.',
+        'Google todavía no deja responder desde el módulo. Tocá el botón de copiar: copia la respuesta y abre la reseña en Google Maps. Ahí tocás Responder, pegás con Ctrl+V y publicás. Tenés que estar con la cuenta de Google que administra la ficha (claudiaadornosrl@gmail.com).',
+        'Después volvé al módulo y tocá ✓ (Ya la publiqué): pasa a Enviados con el texto que quedó en el cuadro. Si no la vas a responder, 🚫 la manda a Ignorados.',
+        'Google pasa por acá solo 5 reseñas por local. Si entra una que no viene con texto, aparece igual un aviso "Reseña nueva" en la bandeja: abrila con ↗, respondela en Google y tocá ✓. Cuando la reseña aparece después con texto, el aviso se cierra solo.',
+        '"Enviar todos" nunca incluye reseñas, porque se publican a mano en Google.',
       ],
     },
     {
