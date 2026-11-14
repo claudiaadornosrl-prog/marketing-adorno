@@ -383,6 +383,18 @@ textarea { font-family: inherit; font-size: 14px; padding: 8px; border: 1px soli
 .g-local .n { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; } .g-local .n .estrellas { font-size: 15px; } .g-local a { color: var(--primary); }
 .g-spark { display: block; margin-top: 6px; }
 .estr-off { opacity: .25; }
+/* (v69) permisos por función del Hub: lo que el perfil tiene oculto no se muestra */
+#tabs button.mk-oculta { display: none !important; }
+body.mk-sin-responder #btn-enviar-todos, body.mk-sin-responder .c-foot, body.mk-sin-responder .acciones-sec .incluir, body.mk-sin-responder .c-resp .frases-btn, body.mk-sin-responder .c-resp .emoji-btn { display: none !important; }
+body.mk-sin-redactar #btn-traer, body.mk-sin-redactar #btn-mejorar { display: none !important; }
+body.mk-sin-frases .chip-f i, body.mk-sin-frases .chip-f.nueva { display: none !important; }
+.aut-fondo { position: fixed; inset: 0; background: rgba(15,23,42,.55); z-index: 10090; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.aut-caja { background: #fff; border-radius: 24px; max-width: 420px; width: 100%; padding: 20px 22px; box-shadow: 0 20px 60px rgba(0,0,0,.3); display: grid; gap: 10px; box-sizing: border-box; }
+.aut-caja h3 { margin: 0; font-size: 16px; }
+.aut-caja input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: 999px; padding: 9px 16px; font: inherit; font-size: 14px; }
+.aut-caja .btn { border-radius: 999px; padding: 8px 16px; }
+.aut-err { color: var(--red); font-size: 12.5px; min-height: 16px; }
+.aut-btns { display: flex; gap: 8px; justify-content: flex-end; }
 </style>
 <style>
 @font-face { font-family: 'URW Gothic'; src: url('fonts/URWGothic-Book.ttf') format('truetype'); font-weight: 300 700; font-display: swap; }
@@ -754,6 +766,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js" integrity="sha384-UagCvVPT5XXA0Hx+nJYUAGBFseHT9zBgpJMSebsAxl9lciTwbT+39j5VfRjdP5Tp" crossorigin="anonymous"></script>
 <script src="/hub/seguridad.js?v=1"></script>
+<script src="/hub/caras.js?v=4" defer></script>
 <script>
 const SUPABASE_URL  = 'https://jfwtiagteuwmyvblgwms.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_udSPma98Sw9eskeeLCgdCw_S2vIX0Fk';
@@ -814,8 +827,8 @@ async function doLogin() {
   finally { document.getElementById('btn-login').disabled = false; }
 }
 async function entrar(user) {
-  const { data: ok } = await sb.rpc('marketing_es_usuario');
-  if (!ok) { /* sin signOut: sesión compartida (SSO) */ document.getElementById('login-error').textContent = 'Tu usuario no tiene acceso a este módulo.'; return; }
+  const { data: ok, error: errOk } = await sb.rpc('marketing_es_usuario');
+  if (!ok) { /* sin signOut: sesión compartida (SSO). Si la base pide el código del celular (MFA0x), se muestra ese motivo y no el de acceso */ document.getElementById('login-error').textContent = errOk && /^MFA/.test(errOk.code || '') ? errOk.message + ' · ' + (errOk.hint || '') : 'Tu usuario no tiene acceso a este módulo.'; return; }
   session = { email: user.email, user };
   document.getElementById('user-info').textContent = user.email;
   document.getElementById('login').style.display = 'none';
@@ -841,10 +854,153 @@ const NOMBRE_MET = { sesiones: 'Sesiones', visitantes: 'Visitantes', carrito: 'A
   productos_activos: 'Productos activos', productos_sin_precio: 'Activos sin precio', productos_borrador: 'En borrador' };
 const ESTADO_CHIP = { idea: 'gray', borrador: 'amber', aprobada: 'green', publicada: 'green', descartada: 'red' };
 
+// ── (v69, 13-nov-2026) Permisos por función, desde el Hub (👤 → Permisos) ──
+// Cada función del módulo está en hub_funciones; hub_puedo(id) dice cómo la tiene el perfil de la sesión:
+// 'h' habilitada · 'a' se ve, pero al usarla pide autorización (usuario y clave de alguien que la tenga habilitada) · 'o' oculta.
+// Las funciones de "ver" (Hoy, Tablero, Oportunidades, Publicaciones, Pauta) se autorizan al entrar al apartado (puedeVer, 10 min);
+// las demás, al grabar (conPermiso): con 'a' GRABA LA SESIÓN DE QUIEN AUTORIZA, abierta solo mientras graba, como en Documentos,
+// Clientes y Gastos. La base controla lo mismo: leer con 'h' o 'a' (marketing_puede), grabar solo con 'h' (marketing_graba).
+const FUNC_NOMBRE = { 'marketing.hoy': 'Ver el resumen del día', 'marketing.responder': 'Responder comentarios y mensajes', 'marketing.redactar': 'Pedir que redacten respuestas o traigan mensajes',
+  'marketing.frases': 'Editar las frases guardadas', 'marketing.tablero': 'Ver métricas', 'marketing.oportunidades': 'Ver y seguir oportunidades de venta', 'marketing.publicaciones': 'Ver publicaciones',
+  'marketing.pauta': 'Ver la pauta', 'marketing.contenido': 'Cargar y editar contenido', 'marketing.descripciones': 'Aprobar descripciones y subirlas a la web', 'marketing.tareas': 'Tareas de la web' };
+const TAB_FUNC = { hoy: ['marketing.hoy'], respuestas: ['marketing.responder', 'marketing.redactar'], tablero: ['marketing.tablero'], oportunidades: ['marketing.oportunidades'], posts: ['marketing.publicaciones'],
+  contenido: ['marketing.contenido'], descripciones: ['marketing.descripciones'], web: ['marketing.tareas'], pauta: ['marketing.pauta'] };   // en el orden de la barra
+const TAB_AL_ENTRAR = { hoy: 'marketing.hoy', tablero: 'marketing.tablero', oportunidades: 'marketing.oportunidades', posts: 'marketing.publicaciones', pauta: 'marketing.pauta' };
+const AUT_MIN = 10;   // autorizar un apartado de "ver" vale 10 minutos
+let PERM = {}, AUT_HASTA = {};
+const perm = f => PERM[f] || 'o';
+const _tabDe = f => Object.keys(TAB_FUNC).find(k => TAB_FUNC[k].includes(f));
+const tabVisible = k => !TAB_FUNC[k] || TAB_FUNC[k].some(f => perm(f) !== 'o');
+async function cargarPermisos() {
+  const ids = Object.keys(FUNC_NOMBRE), [r, loc] = await Promise.all([Promise.all(ids.map(f => sb.rpc('hub_puedo', { p_funcion: f }))), sb.rpc('hub_mis_locales')]);
+  ids.forEach((f, i) => { PERM[f] = !r[i].error && ['h', 'a', 'o'].includes(r[i].data) ? r[i].data : 'a'; });   // si no contesta: ante la duda, pide
+  const L = (!loc.error && Array.isArray(loc.data)) ? loc.data : [];   // (v70) la cuenta de un local → ese local; si no, la oficina
+  MK_LOCAL = L.length === 1 ? L[0] : 'oficina';
+  Object.keys(TAB_FUNC).forEach(k => document.getElementById('tab-' + k)?.classList.toggle('mk-oculta', !tabVisible(k)));
+  const b = document.body.classList;
+  b.toggle('mk-sin-responder', perm('marketing.responder') === 'o'); b.toggle('mk-sin-redactar', perm('marketing.redactar') === 'o'); b.toggle('mk-sin-frases', perm('marketing.frases') === 'o');
+}
+const _avisoOculta = f => toast(`Tu perfil no tiene habilitado «${FUNC_NOMBRE[f]}». Los permisos se manejan desde el Hub.`, 'error');
+// Anota la autorización con la sesión de quien autorizó (la base pone su mail); pedido_por = quien la pidió
+const _anotarAutorizacion = (a, f) => a.cli.from('marketing_autorizaciones').insert({ funcion: f, pedido_por: session.email, autorizo_nombre: a.nombre }).then(() => {}, () => {});
+// Apartados de "ver": true si se puede entrar ya (habilitada, o autorizada hace menos de 10 min); con 'a' pide la autorización
+async function puedeVer(f) {
+  const e = perm(f);
+  if (e === 'h' || (AUT_HASTA[f] || 0) > Date.now()) return true;
+  if (e === 'o') { _avisoOculta(f); return false; }
+  const a = await pedirAutorizacion(f);
+  if (!a) return false;
+  await _anotarAutorizacion(a, f); await a.salir();
+  AUT_HASTA[f] = Date.now() + AUT_MIN * 60000;
+  toast(`✓ Autorizó ${a.nombre} · vale ${AUT_MIN} minutos`);
+  return true;
+}
+// Grabar: grabar(db) recibe con qué cliente hacerlo. Con 'h', la sesión propia (sb); con 'a', la de quien autoriza, que se
+// cierra apenas termina (la base acepta grabar solo con 'h'). Los campos "por" (enviado_por, aprobado_por…) siguen con quien lo pidió.
+// (v70, 14-nov-2026, JP desde el Hub) detalle = qué se está haciendo (sin precios): si JP marcó la función con «📷 Registra quién»,
+// antes de grabar se anota quién lo hizo (ver _registrarQuien). Si la persona cancela, no se graba nada.
+async function conPermiso(f, grabar, detalle) {
+  const e = perm(f);
+  if (e === 'o') { _avisoOculta(f); return; }
+  if (e === 'h') { if (!(await _registrarQuien(f, detalle))) return; return grabar(sb); }
+  const a = await pedirAutorizacion(f);
+  if (!a) return;
+  try {
+    if (!(await _registrarQuien(f, detalle))) return;   // después de la autorización, con la sesión de quien usa el módulo
+    const r = await grabar(a.cli);
+    await _anotarAutorizacion(a, f);
+    toast(`✓ Autorizó ${a.nombre}`);
+    return r;
+  } finally { await a.salir(); }
+}
+// (v70) «📷 Registra quién» (Hub → Permisos → Perfiles): ADORNO_CARAS.registrar (/hub/caras.js) se fija si la función está marcada;
+// si no, sigue normal (una consulta rápida). Con usuario personal anota a esa persona sin preguntar; con la cuenta compartida
+// la reconoce por la cara (si JP prendió la llave de caras) o la persona toca su nombre en la lista. Nunca guarda la foto.
+// Siempre con la sesión de quien usa el módulo (sb), nunca con la de quien autoriza. true = seguir y grabar.
+let MK_LOCAL = 'oficina';   // dónde se hizo, para hub_registros y para la lista de nombres (cargarPermisos lo ajusta)
+async function _registrarQuien(f, detalle) {
+  if (!window.ADORNO_CARAS || !ADORNO_CARAS.registrar) {   // caras.js no llegó a cargar: si la función no registra, se sigue igual
+    const c = await sb.rpc('hub_registra_quien', { p_funcion: f });
+    if (c.error) { toast('No se pudo anotar quién lo hace: ' + c.error.message, 'error'); return false; }
+    if (!(c.data && c.data.registra)) return true;
+    toast('Esta función anota quién la hace y no terminó de cargar esa parte: recargá la página y probá de nuevo.', 'error'); return false;
+  }
+  const r = await ADORNO_CARAS.registrar({ cli: sb, funcion: f, local: MK_LOCAL, detalle: detalle || null });
+  if (!r.ok) { if (r.motivo === 'error') toast('No se pudo anotar quién lo hace: ' + (r.error || 'error'), 'error'); return false; }
+  return true;
+}
+const _detMsg = m => m ? { mensaje: m.id, red: m.plataforma, tipo: m.tipo, autor: m.autor || null } : {};
+function _nombrePersona(n) {   // 'DONZELLI, SORAYA' → 'Soraya Donzelli'
+  const t = String(n || '').trim();
+  if (!t.includes(',') || t.includes('@')) return t;
+  const [ap, no] = t.split(',');
+  return (no.trim() + ' ' + ap.trim()).toLowerCase().replace(/(^|\s)\S/g, x => x.toUpperCase());
+}
+// Ventana de autorización: usuario personal de quien autoriza, en una sesión aparte (no toca la de este equipo).
+// Autoriza quien, con SU sesión, pasa hub_autoriza(función): admin, o una persona con legajo (nunca una cuenta genérica de
+// local u oficina) con la función habilitada ('h'). Devuelve { email, nombre, cli, salir } con esa sesión ABIERTA (la cierra
+// quien la usa, con salir(), apenas termina), o null si se canceló.
+function pedirAutorizacion(f) {
+  return new Promise(listo => {
+    let ultimo = ''; try { ultimo = localStorage.getItem('mk_autoriza') || ''; } catch (e) {}
+    const ov = document.createElement('div'); ov.className = 'aut-fondo';
+    ov.setAttribute('data-adorno-superior', '1');   // para /hub/equipo.js: acá va el usuario personal de quien autoriza, no el del equipo
+    ov.innerHTML = `<div class="aut-caja" role="dialog" aria-modal="true">
+      <h3>Pedir autorización</h3>
+      <div class="mini">«${esc(FUNC_NOMBRE[f])}»: tu perfil la tiene con permiso. La autoriza alguien que la tenga habilitada, con su usuario personal (el mismo mail y clave de RRHH; la cuenta del local o de la oficina no sirve). ${TAB_AL_ENTRAR[_tabDe(f)] === f ? `Vale ${AUT_MIN} minutos` : 'Vale para esta vez'} y queda anotado quién autorizó.</div>
+      <input type="email" id="aut-mail" placeholder="mail de quien autoriza" autocomplete="username" value="${esc(ultimo)}">
+      <input type="password" id="aut-pass" placeholder="su contraseña" autocomplete="current-password">
+      <div class="aut-err" id="aut-err"></div>
+      <div class="aut-btns"><button type="button" class="btn" id="aut-no">Cancelar</button><button type="button" class="btn primary" id="aut-si">Autorizar</button></div></div>`;
+    document.body.appendChild(ov);
+    const $ = s => ov.querySelector(s), fin = r => { ov.remove(); listo(r); }, err = t => { $('#aut-err').textContent = t; };
+    $('#aut-no').onclick = () => fin(null);
+    ov.addEventListener('keydown', e => { if (e.key === 'Escape') fin(null); });
+    $('#aut-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('#aut-si').click(); });
+    $('#aut-si').onclick = async () => {
+      const email = $('#aut-mail').value.trim().toLowerCase(), pass = $('#aut-pass').value, bt = $('#aut-si');
+      err('');
+      if (!email || !pass) { err('Completá el mail y la contraseña de quien autoriza.'); return; }
+      if (email === String(session.email || '').toLowerCase()) { err('Tiene que autorizar otra persona, con su usuario.'); return; }
+      bt.disabled = true; $('#aut-no').disabled = true; bt.textContent = 'Autorizando…';
+      const cli = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'marketing-autoriza' } });
+      const salir = async () => { try { await cli.auth.signOut({ scope: 'local' }); } catch (_) {} };
+      try {
+        const { error } = await cli.auth.signInWithPassword({ email, password: pass });
+        if (error) throw new Error('Mail o contraseña incorrectos.');
+        if (window.ADORNO_MFA && ADORNO_MFA.pedirCodigo && !(await ADORNO_MFA.pedirCodigo(cli))) throw new Error('Sin el código del celular no se puede autorizar.');
+        const [ra, rv] = await Promise.all([cli.rpc('hub_autoriza', { p_funcion: f }), cli.rpc('hub_puede_ver', { p_que: 'marketing' })]);   // hub_puede_ver: solo para el nombre
+        const nombre = _nombrePersona((rv.data && rv.data.nombre) || email);
+        if (ra.error) throw new Error('No se pudo verificar el permiso: ' + ra.error.message);
+        if (ra.data !== true) throw new Error(`${nombre} no puede autorizar «${FUNC_NOMBRE[f]}»: tiene que ser una persona (no la cuenta del local o de la oficina) con esa función habilitada.`);
+        try { localStorage.setItem('mk_autoriza', email); } catch (e) {}
+        fin({ email, nombre, cli, salir });
+      } catch (e) {
+        await salir();
+        err(e.message || 'No se pudo autorizar.');
+        bt.disabled = false; $('#aut-no').disabled = false; bt.textContent = 'Autorizar'; $('#aut-pass').value = '';
+      }
+    };
+    setTimeout(() => $(ultimo ? '#aut-pass' : '#aut-mail').focus(), 50);
+  });
+}
+// Cambiar de apartado: los ocultos no se abren; los de "ver" con permiso piden la autorización al entrar
+const _switchTabBase = switchTab;
+switchTab = async function (k) {
+  if (!tabVisible(k)) return;
+  const f = TAB_AL_ENTRAR[k];
+  if (f && perm(f) === 'a' && !(await puedeVer(f))) return;
+  _switchTabBase(k);
+};
+
 async function init() {
   document.getElementById('franja-prueba').style.display = 'none';
+  await cargarPermisos();
   await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas(), cargarMensajes(), cargarFrases(), cargarPosts(), cargarDescripciones()]);
   renderTablero(); renderContenido(); renderTareas(); renderMensajes(); renderOportunidades(); renderPosts(); renderDescripciones(); renderHoy();
+  // el primer apartado: Hoy si está habilitado; si no, el primero que no pida autorización (o el primero visible)
+  const tabs = Object.keys(TAB_FUNC), ini = tabs.find(k => tabVisible(k) && !(TAB_AL_ENTRAR[k] && perm(TAB_AL_ENTRAR[k]) === 'a')) || tabs.find(tabVisible);
+  if (ini !== 'hoy') { document.getElementById('content-hoy').classList.remove('active'); document.getElementById('tab-hoy').classList.remove('active'); if (ini) switchTab(ini); }
   setInterval(() => cargarMensajes().then(() => {
     const act = document.getElementById('content-respuestas').classList.contains('active');
     const ocupado = document.getElementById('m-lista').contains(document.activeElement) || [...document.querySelectorAll('#m-lista video, #m-lista audio')].some(v => !v.paused);
@@ -940,7 +1096,7 @@ function _pieResena(m) {
 }
 async function copiarYAbrir(id) {
   const m = MSG.find(x => x.id === id), ta = document.getElementById('resp-' + id); if (!m || !ta) return;
-  const t = ta.value.trim(); if (!t) { toast('Escribí la respuesta', 'error'); return; }
+  const t = ta.value.trim(); if (!t) { toast('Escribí la respuesta', 'error'); return; }   // no graba nada: lo que queda anotado es el ✓ (marcarPublicada)
   try { await navigator.clipboard.writeText(t); } catch (e) { ta.select(); document.execCommand('copy'); }
   window.open(m.post_url || 'https://www.google.com/maps', '_blank', 'noopener');
   toast('📋 Respuesta copiada. En Google tocá Responder, pegá con Ctrl+V y publicá. Después volvé y tocá ✓');
@@ -948,10 +1104,13 @@ async function copiarYAbrir(id) {
 async function marcarPublicada(id) {
   const m = MSG.find(x => x.id === id), t = (document.getElementById('resp-' + id)?.value || '').trim();
   if (!t && !(m && (m.externo_id || '').startsWith('aviso-'))) { toast('Falta el texto que publicaste en Google', 'error'); return; }
-  const { error } = await sb.from('marketing_mensajes').update({ respuesta: t || null, estado: 'enviado', respondido: true, enviado_por: session.email, enviado_at: new Date().toISOString() }).eq('id', id).eq('estado', 'pendiente');
-  if (error) { toast('Error: ' + error.message, 'error'); return; }
-  delete BORR[id]; try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
-  toast('✓ Marcada como publicada en Google'); await cargarMensajes(); renderMensajes();
+  await conPermiso('marketing.responder', async db => {
+    const { error } = await db.from('marketing_mensajes').update({ respuesta: t || null, estado: 'enviado', respondido: true, enviado_por: session.email, enviado_at: new Date().toISOString() }).eq('id', id).eq('estado', 'pendiente');
+    if (error) { toast('Error: ' + error.message, 'error'); return; }
+    delete BORR[id]; try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+    toast('✓ Marcada como publicada en Google');
+  }, { accion: 'Publicada en Google', ..._detMsg(m) });
+  await cargarMensajes(); renderMensajes();
 }
 function _verResenas(k) {
   switchTab('respuestas');
@@ -963,8 +1122,10 @@ function _kpiGoogleHoy() {
   const locs = Object.keys(NOM_LOCAL).filter(k => G.some(m => m.dimension === k));
   const pend = MSG.filter(m => m.plataforma === 'google' && m.estado === 'pendiente').length;
   if (!locs.length && !pend) return '';
+  const aResp = pend && tabVisible('respuestas');   // (v69) la tarjeta lleva solo a un apartado que el perfil puede abrir
+  if (!aResp && !tabVisible('tablero')) return '';
   const r = k => { const x = G.filter(m => m.dimension === k).sort((a, b) => a.fecha.localeCompare(b.fecha)).pop(); return x ? Number(x.valor).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '—'; };
-  return `<div class="kpi" style="cursor:pointer" onclick="${pend ? "_verResenas('alcorta')" : "_irA('tablero')"}" title="${pend ? 'Ver las reseñas sin responder' : 'Ver las opiniones de Google en el Tablero'}"><div class="l">Reseñas de Google</div><div class="n" style="color:${pend ? 'var(--red)' : 'var(--primary)'}">${pend}</div><div class="d">sin responder${locs.length ? ' · ' + locs.map(k => `${NOM_LOCAL[k].split(' ')[0]} ${r(k)}★`).join(' · ') : ''}</div></div>`;
+  return `<div class="kpi" style="cursor:pointer" onclick="${aResp ? "_verResenas('alcorta')" : "_irA('tablero')"}" title="${aResp ? 'Ver las reseñas sin responder' : 'Ver las opiniones de Google en el Tablero'}"><div class="l">Reseñas de Google</div><div class="n" style="color:${pend ? 'var(--red)' : 'var(--primary)'}">${pend}</div><div class="d">sin responder${locs.length ? ' · ' + locs.map(k => `${NOM_LOCAL[k].split(' ')[0]} ${r(k)}★`).join(' · ') : ''}</div></div>`;
 }
 function _sparkRating(pts) {
   if (pts.length < 2) return '';
@@ -1023,7 +1184,7 @@ async function cargarMensajes() {
   for (const k of ['atelier', 'oficial']) { const e = document.getElementById('mc-' + k), x = MSG.filter(m => m.estado === 'pendiente' && m.cuenta === k).length; if (e) e.textContent = x ? String(x) : ''; }
 }
 // ── Hoy: vista de entrada para quien atiende (lote 3) ──
-function _irA(tab, fn) { switchTab(tab); if (fn) fn(); }
+async function _irA(tab, fn) { await switchTab(tab); if (fn && document.getElementById('content-' + tab).classList.contains('active')) fn(); }
 function renderHoy() {
   const pend = MSG.filter(m => m.estado === 'pendiente'), viejos = pend.filter(m => (Date.now() - new Date(m.fecha)) > 72e5);
   const porC = c => pend.filter(m => m.cuenta === c).length;
@@ -1032,17 +1193,18 @@ function renderHoy() {
   const tP = TAR.filter(t => t.estado === 'pendiente'), tAlta = tP.filter(t => t.prioridad === 1).length;
   const enviadosHoy = MSG.filter(m => m.estado === 'enviado' && m.enviado_at && m.enviado_at.slice(0, 10) === hoyAR()).length;
   const resumen = TAR.filter(t => (t.referencia || '').startsWith('resumen:')).sort((a, b) => b.id - a.id)[0];
+  const vR = tabVisible('respuestas'), vD = tabVisible('descripciones'), vT = tabVisible('web');   // (v69) solo lo que el perfil puede abrir
   document.getElementById('hoy-cards').innerHTML =
-    `<div class="kpi" style="cursor:pointer" onclick="_irA('respuestas')"><div class="l">Sin responder</div><div class="n" style="color:${viejos.length ? 'var(--red)' : 'var(--primary)'}">${pend.length}</div><div class="d">${viejos.length} con más de 2 h · Atelier ${porC('atelier')} · Claudia Adorno ${porC('oficial')}</div></div>`
-    + `<div class="kpi"><div class="l">Respondidos hoy</div><div class="n">${enviadosHoy}</div><div class="d">${dms} privados y ${precios} consultas de precio esperan</div></div>`
-    + `<div class="kpi" style="cursor:pointer" onclick="_irA('descripciones')"><div class="l">Descripciones por aprobar</div><div class="n">${desc}</div><div class="d">${descErr ? descErr + ' con error' : 'para la tienda del atelier'}</div></div>`
-    + `<div class="kpi" style="cursor:pointer" onclick="_irA('web')"><div class="l">Tareas pendientes</div><div class="n">${tP.length}</div><div class="d">${tAlta} de prioridad alta</div></div>`;
+    (vR ? `<div class="kpi" style="cursor:pointer" onclick="_irA('respuestas')"><div class="l">Sin responder</div><div class="n" style="color:${viejos.length ? 'var(--red)' : 'var(--primary)'}">${pend.length}</div><div class="d">${viejos.length} con más de 2 h · Atelier ${porC('atelier')} · Claudia Adorno ${porC('oficial')}</div></div>`
+    + `<div class="kpi"><div class="l">Respondidos hoy</div><div class="n">${enviadosHoy}</div><div class="d">${dms} privados y ${precios} consultas de precio esperan</div></div>` : '')
+    + (vD ? `<div class="kpi" style="cursor:pointer" onclick="_irA('descripciones')"><div class="l">Descripciones por aprobar</div><div class="n">${desc}</div><div class="d">${descErr ? descErr + ' con error' : 'para la tienda del atelier'}</div></div>` : '')
+    + (vT ? `<div class="kpi" style="cursor:pointer" onclick="_irA('web')"><div class="l">Tareas pendientes</div><div class="n">${tP.length}</div><div class="d">${tAlta} de prioridad alta</div></div>` : '');
   document.getElementById('hoy-cards').innerHTML += _kpiGoogleHoy();
   const items = [];
-  viejos.slice(0, 5).forEach(m => items.push(`<div class="fila"><div class="prio p1"></div><div class="cuerpo"><div class="t">${esc(m.autor || 'desconocido')} espera hace ${_hace(m.fecha).replace('hace ', '')}</div><div class="s">${_nomRed(m.plataforma)} · ${_nomTipo(m.tipo)}${m.local ? ' · ' + esc(NOM_LOCAL[m.local] || m.local) : ''} · ${esc(NOM_CUENTA[m.cuenta] || m.cuenta)}: ${esc((m.texto || (m.plataforma === 'google' ? (m.estrellas ? _estrellas(m.estrellas) : 'reseña sin texto') : '📎 multimedia')).slice(0, 90))}</div></div><div class="acc"><button class="btn primary" onclick="_irA('respuestas', () => { cuentaMensajes('${m.cuenta}'); setTimeout(() => document.getElementById('msg-${m.id}')?.scrollIntoView({behavior:'smooth'}), 100); })">Responder</button></div></div>`));
-  if (pend.length > viejos.length) items.push(`<div class="fila"><div class="prio p2"></div><div class="cuerpo"><div class="t">${pend.length - viejos.length} mensajes recientes sin responder</div><div class="s">Llegaron hace menos de 2 horas.</div></div><div class="acc"><button class="btn" onclick="_irA('respuestas')">Ver</button></div></div>`);
-  if (desc) items.push(`<div class="fila"><div class="prio p2"></div><div class="cuerpo"><div class="t">${desc} descripciones de productos esperan aprobación</div><div class="s">Claude las redactó con la identidad del atelier; aprobá, corregí o descartá.</div></div><div class="acc"><button class="btn" onclick="_irA('descripciones')">Revisar</button></div></div>`);
-  tP.filter(t => t.prioridad === 1).slice(0, 3).forEach(t => items.push(`<div class="fila"><div class="prio p1"></div><div class="cuerpo"><div class="t">${esc(t.titulo)}</div><div class="s">${esc((t.detalle || '').slice(0, 140))}</div></div><div class="acc"><button class="btn" onclick="_irA('web')">Ver</button></div></div>`));
+  if (vR) viejos.slice(0, 5).forEach(m => items.push(`<div class="fila"><div class="prio p1"></div><div class="cuerpo"><div class="t">${esc(m.autor || 'desconocido')} espera hace ${_hace(m.fecha).replace('hace ', '')}</div><div class="s">${_nomRed(m.plataforma)} · ${_nomTipo(m.tipo)}${m.local ? ' · ' + esc(NOM_LOCAL[m.local] || m.local) : ''} · ${esc(NOM_CUENTA[m.cuenta] || m.cuenta)}: ${esc((m.texto || (m.plataforma === 'google' ? (m.estrellas ? _estrellas(m.estrellas) : 'reseña sin texto') : '📎 multimedia')).slice(0, 90))}</div></div><div class="acc"><button class="btn primary" onclick="_irA('respuestas', () => { cuentaMensajes('${m.cuenta}'); setTimeout(() => document.getElementById('msg-${m.id}')?.scrollIntoView({behavior:'smooth'}), 100); })">Responder</button></div></div>`));
+  if (vR && pend.length > viejos.length) items.push(`<div class="fila"><div class="prio p2"></div><div class="cuerpo"><div class="t">${pend.length - viejos.length} mensajes recientes sin responder</div><div class="s">Llegaron hace menos de 2 horas.</div></div><div class="acc"><button class="btn" onclick="_irA('respuestas')">Ver</button></div></div>`);
+  if (vD && desc) items.push(`<div class="fila"><div class="prio p2"></div><div class="cuerpo"><div class="t">${desc} descripciones de productos esperan aprobación</div><div class="s">Claude las redactó con la identidad del atelier; aprobá, corregí o descartá.</div></div><div class="acc"><button class="btn" onclick="_irA('descripciones')">Revisar</button></div></div>`);
+  if (vT) tP.filter(t => t.prioridad === 1).slice(0, 3).forEach(t => items.push(`<div class="fila"><div class="prio p1"></div><div class="cuerpo"><div class="t">${esc(t.titulo)}</div><div class="s">${esc((t.detalle || '').slice(0, 140))}</div></div><div class="acc"><button class="btn" onclick="_irA('web')">Ver</button></div></div>`));
   if (resumen) items.push(`<div class="fila"><div class="prio p3"></div><div class="cuerpo"><div class="t">📣 ${esc(resumen.titulo)}</div><div class="s">${esc(resumen.detalle || '')}</div></div></div>`);
   document.getElementById('hoy-lista').innerHTML = items.length ? items.join('') : '<div class="empty">Todo al día. 🎉</div>';
 }
@@ -1124,11 +1286,16 @@ function cerrarFrase() { document.getElementById('fr-overlay').classList.remove(
 async function guardarFrase(borrar) {
   const id = Number(document.getElementById('fr-id').value) || 0, nombre = document.getElementById('fr-nombre').value.trim(), texto = document.getElementById('fr-texto').value.trim();
   if (!borrar && (!nombre || !texto)) { toast('Poné el nombre corto y el texto', 'error'); return; }
-  let error;
-  if (borrar) { if (!confirm(`¿Sacar la frase "${nombre}" de la lista?`)) return; ({ error } = await sb.from('marketing_frases').update({ activa: false }).eq('id', id)); }
-  else if (id) ({ error } = await sb.from('marketing_frases').update({ nombre, texto }).eq('id', id));
-  else ({ error } = await sb.from('marketing_frases').insert({ nombre, texto, activa: true, orden: (Math.max(0, ...FRASES.map(x => x.orden || 0)) + 1) }));
-  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  if (borrar && !confirm(`¿Sacar la frase "${nombre}" de la lista?`)) return;
+  const ok = await conPermiso('marketing.frases', async db => {
+    let error;
+    if (borrar) ({ error } = await db.from('marketing_frases').update({ activa: false }).eq('id', id));
+    else if (id) ({ error } = await db.from('marketing_frases').update({ nombre, texto }).eq('id', id));
+    else ({ error } = await db.from('marketing_frases').insert({ nombre, texto, activa: true, orden: (Math.max(0, ...FRASES.map(x => x.orden || 0)) + 1) }));
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    return true;
+  }, { accion: borrar ? 'Sacar frase' : id ? 'Editar frase' : 'Nueva frase', frase: nombre });
+  if (!ok) return;
   cerrarFrase(); await cargarFrases(); renderMensajes(); toast(borrar ? 'Frase sacada' : '✓ Frase guardada');
 }
 function insertarFrase(id, fid) {
@@ -1170,14 +1337,22 @@ function _loteBtn(m, lista) {
   if (grupo.length < 2 || grupo[0].id !== m.id) return '';
   return `<button class="btn" style="margin-left:auto" onclick="enviarLote('${esc(m.conversacion_id)}')" title="Envía la respuesta que está en cada cuadro de los ${grupo.length} comentarios pendientes de esta publicación">📤 Enviar los ${grupo.length} de esta publicación</button>`;
 }
+// pedido 'enviar': el servidor manda lo que quedó 'para_enviar' en menos de un minuto (si no hay uno abierto)
+async function _pedirEnvio(db) {
+  const { data: ab } = await db.from('marketing_pedidos').select('id').eq('tipo', 'enviar').in('estado', ['pendiente', 'en_curso']).limit(1);
+  if (!(ab && ab.length)) await db.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
+}
 async function enviarLote(postId) {
   const grupo = MSG.filter(x => x.tipo === 'comentario' && x.conversacion_id === postId && x.estado === 'pendiente');
   const filas = grupo.map(x => ({ id: x.id, t: (document.getElementById('resp-' + x.id)?.value || '').trim(), dm: (document.getElementById('dm-' + x.id)?.value || '').trim() || null })).filter(x => x.t);
   if (!filas.length) { toast('No hay respuestas escritas', 'error'); return; }
   if (!confirm(`¿Enviar ${filas.length} respuestas a los comentarios de esta publicación?`)) return;
-  for (const f of filas) await sb.from('marketing_mensajes').update({ respuesta: f.t, respuesta_dm: f.dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', f.id).eq('estado', 'pendiente');
-  const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'enviar').in('estado', ['pendiente', 'en_curso']).limit(1);
-  if (!(ab && ab.length)) await sb.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
+  const ok = await conPermiso('marketing.responder', async db => {
+    for (const f of filas) await db.from('marketing_mensajes').update({ respuesta: f.t, respuesta_dm: f.dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', f.id).eq('estado', 'pendiente');
+    await _pedirEnvio(db);
+    return true;
+  }, { accion: 'Enviar las respuestas de una publicación', publicacion: postId, cantidad: filas.length, mensajes: filas.map(f => f.id).slice(0, 100) });
+  if (!ok) return;
   toast(`✓ ${filas.length} respuestas en camino (menos de 1 minuto)`); await cargarMensajes(); renderMensajes();
   clearTimeout(window._envTimer); window._envTimer = setTimeout(() => cargarMensajes().then(renderMensajes), 70000);
 }
@@ -1185,8 +1360,12 @@ async function enviarLote(postId) {
 async function pedirRedaccion() {
   const { data: abiertos } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'redactar').in('estado', ['pendiente', 'en_curso']).limit(1);
   if (abiertos && abiertos.length) { toast('Ya hay una redacción en curso'); _vigilarPedido(); return; }
-  const { error } = await sb.from('marketing_pedidos').insert({ tipo: 'redactar', pedido_por: session.email });
-  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  const ok = await conPermiso('marketing.redactar', async db => {
+    const { error } = await db.from('marketing_pedidos').insert({ tipo: 'redactar', pedido_por: session.email });
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    return true;
+  }, { accion: 'Pedir que Claude mejore las respuestas' });
+  if (!ok) return;
   toast('✓ Pedido enviado: Claude está redactando'); _vigilarPedido();
 }
 function _vigilarPedido() {
@@ -1208,8 +1387,12 @@ async function pedirTraer() {
   const b = document.getElementById('btn-traer');
   const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'traer').in('estado', ['pendiente', 'en_curso']).limit(1);
   if (!(ab && ab.length)) {
-    const { error } = await sb.from('marketing_pedidos').insert({ tipo: 'traer', pedido_por: session.email });
-    if (error) { toast('Error: ' + error.message, 'error'); return; }
+    const ok = await conPermiso('marketing.redactar', async db => {
+      const { error } = await db.from('marketing_pedidos').insert({ tipo: 'traer', pedido_por: session.email });
+      if (error) { toast('Error: ' + error.message, 'error'); return false; }
+      return true;
+    }, { accion: 'Buscar mensajes nuevos' });
+    if (!ok) return;
   }
   b.disabled = true; b.innerHTML = _reloj(); b.title = 'Buscando mensajes nuevos en Instagram y Facebook…';
   clearInterval(window._traerTimer);
@@ -1409,25 +1592,30 @@ async function enviarTodos() {
   const nDm = c.filter(x => x.m.tipo === 'dm').length, nCo = c.length - nDm;
   if (!confirm(`¿Enviar ${c.length} respuestas de una vez?\n\n${nCo} comentarios y ${nDm} mensajes privados.\n${ed} las escribiste o corregiste vos${sug ? `; ${sug} son sugerencias que no tocaste y salen tal cual` : ''}.${_fueraEnviarTodos() ? `\n${_fueraEnviarTodos()} sin tilde quedan afuera.` : ''}\n\nSalen en menos de 1 minuto.`)) return;
   const b = document.getElementById('btn-enviar-todos'); b.disabled = true;
-  let ok = 0;
-  for (const x of c) {
-    const { error } = await sb.from('marketing_mensajes').update({ respuesta: x.t, respuesta_dm: x.dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', x.m.id).eq('estado', 'pendiente');
-    if (!error) { ok++; delete BORR[x.m.id]; }
-  }
-  try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
-  const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'enviar').in('estado', ['pendiente', 'en_curso']).limit(1);
-  if (!(ab && ab.length)) await sb.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
+  const ok = await conPermiso('marketing.responder', async db => {   // una sola autorización para todas
+    let n = 0;
+    for (const x of c) {
+      const { error } = await db.from('marketing_mensajes').update({ respuesta: x.t, respuesta_dm: x.dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', x.m.id).eq('estado', 'pendiente');
+      if (!error) { n++; delete BORR[x.m.id]; }
+    }
+    try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+    await _pedirEnvio(db);
+    return n;
+  }, { accion: 'Enviar todos', cantidad: c.length, comentarios: nCo, privados: nDm, editadas: ed, mensajes: c.map(x => x.m.id).slice(0, 100) });
+  if (ok == null) { actualizarEnviarTodos(); return; }
   toast(`✓ ${ok} respuestas en camino (menos de 1 minuto)`); await cargarMensajes(); renderMensajes();
   clearTimeout(window._envTimer); window._envTimer = setTimeout(() => cargarMensajes().then(renderMensajes), 70000);
 }
 async function enviarMensaje(id) {
   const t = (document.getElementById('resp-' + id)?.value || '').trim(); if (!t) { toast('Escribí la respuesta', 'error'); return; }
   const dm = (document.getElementById('dm-' + id)?.value || '').trim() || null;
-  const { error } = await sb.from('marketing_mensajes').update({ respuesta: t, respuesta_dm: dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', id);
-  if (error) { toast('Error: ' + error.message, 'error'); return; }
-  // (v13) pedido 'enviar': el servidor la manda en menos de un minuto (si no, igual sale con el cron de 10 min)
-  const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'enviar').in('estado', ['pendiente', 'en_curso']).limit(1);
-  if (!(ab && ab.length)) await sb.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
+  const ok = await conPermiso('marketing.responder', async db => {
+    const { error } = await db.from('marketing_mensajes').update({ respuesta: t, respuesta_dm: dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', id);
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    await _pedirEnvio(db);   // (v13) el servidor la manda en menos de un minuto (si no, igual sale con el cron de 10 min)
+    return true;
+  }, { accion: 'Enviar respuesta', ..._detMsg(MSG.find(x => x.id === id)) });
+  if (!ok) return;
   delete BORR[id]; try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
   toast('✓ Enviando (menos de 1 minuto)'); await cargarMensajes(); renderMensajes();
   clearTimeout(window._envTimer); window._envTimer = setTimeout(() => cargarMensajes().then(renderMensajes), 70000);
@@ -1435,15 +1623,22 @@ async function enviarMensaje(id) {
 async function ocultarComentario(id) {
   const m = MSG.find(x => x.id === id); if (!m) return;
   if (!confirm(`¿Ocultar este comentario de ${m.autor || 'desconocido'}?\n\n"${(m.texto || '').slice(0, 120)}"\n\nEn ${m.plataforma === 'instagram' ? 'Instagram' : 'Facebook'} lo deja de ver todo el mundo menos quien lo escribió. Se puede volver a mostrar desde Meta.`)) return;
-  await estadoMensaje(id, 'ocultar');
-  const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', 'enviar').in('estado', ['pendiente', 'en_curso']).limit(1);
-  if (!(ab && ab.length)) await sb.from('marketing_pedidos').insert({ tipo: 'enviar', pedido_por: session.email });
-  toast('🙈 Se oculta en menos de 1 minuto');
+  const ok = await conPermiso('marketing.responder', async db => {
+    const { error } = await db.from('marketing_mensajes').update({ estado: 'ocultar' }).eq('id', id);
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    await _pedirEnvio(db);
+    return true;
+  }, { accion: 'Ocultar comentario', ..._detMsg(m) });
+  if (!ok) return;
+  toast('🙈 Se oculta en menos de 1 minuto'); await cargarMensajes(); renderMensajes();
 }
 async function estadoMensaje(id, estado) {
-  const { error } = await sb.from('marketing_mensajes').update({ estado }).eq('id', id);
-  if (error) { toast('Error: ' + error.message, 'error'); return; }
-  await cargarMensajes(); renderMensajes();
+  const ok = await conPermiso('marketing.responder', async db => {
+    const { error } = await db.from('marketing_mensajes').update({ estado }).eq('id', id);
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    return true;
+  }, { accion: estado === 'ignorado' ? 'Ignorar mensaje' : 'Mensaje: ' + estado, ..._detMsg(MSG.find(x => x.id === id)) });
+  if (ok) { await cargarMensajes(); renderMensajes(); }
 }
 
 // ── Oportunidades de venta (preguntas de precio) ──
@@ -1462,7 +1657,14 @@ function renderOportunidades() {
       </div>${m.post_imagen ? `<a class="post-thumb" href="${esc(m.post_url || m.post_imagen)}" target="_blank" rel="noopener"><img src="${esc(m.post_imagen)}" alt="" loading="lazy"></a>` : ''}</div>`).join('')
     : '<div class="empty">Sin consultas de precio abiertas.</div>';
 }
-async function guardarOportunidad(id, upd) { const { error } = await sb.from('marketing_mensajes').update(upd).eq('id', id); if (error) toast('Error: ' + error.message, 'error'); else { Object.assign(MSG.find(m => m.id === id) || {}, upd); toast('✓'); } }
+async function guardarOportunidad(id, upd) {
+  const ok = await conPermiso('marketing.oportunidades', async db => {
+    const { error } = await db.from('marketing_mensajes').update(upd).eq('id', id);
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    return true;
+  }, { accion: 'venta' in upd ? 'Oportunidad: ¿compró?' : 'Oportunidad: qué producto es', ..._detMsg(MSG.find(x => x.id === id)), ...upd });
+  if (ok) { Object.assign(MSG.find(m => m.id === id) || {}, upd); toast('✓'); } else renderOportunidades();   // si no se grabó, vuelve a mostrar lo que hay
+}
 
 // ── Publicaciones ──
 let POSTS = [];
@@ -1502,8 +1704,13 @@ async function estadoDesc(id, estado) {
   const upd = { estado };
   const t = document.getElementById('dtx-' + id); if (t) { upd.propuesta = t.value.trim(); upd.seo_titulo = (document.getElementById('dst-' + id)?.value || '').trim() || null; upd.seo_descripcion = (document.getElementById('dsd-' + id)?.value || '').trim() || null; }
   if (estado === 'aprobada') { if (!upd.propuesta && !(DESC.find(d => d.id === id) || {}).propuesta) { toast('Falta el texto', 'error'); return; } upd.aprobado_por = session.email; upd.aprobado_at = new Date().toISOString(); upd.error = null; }
-  const { error } = await sb.from('marketing_descripciones').update(upd).eq('id', id); if (error) { toast('Error: ' + error.message, 'error'); return; }
-  await cargarDescripciones(); renderDescripciones();
+  const ok = await conPermiso('marketing.descripciones', async db => {
+    const { error } = await db.from('marketing_descripciones').update(upd).eq('id', id);
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    return true;
+  }, { accion: { aprobada: 'Aprobar descripción', propuesta: 'Volver a propuesta', descartada: 'Descartar descripción', pendiente: 'Volver a redactar' }[estado] || 'Descripción: ' + estado,
+       descripcion: id, producto: (DESC.find(d => d.id === id) || {}).titulo || null });
+  if (ok) { await cargarDescripciones(); renderDescripciones(); }
 }
 async function pedirDescripciones() { await _pedidoGenerico('descripciones', 'btn-desc', '✨ Redactar 30 más', () => cargarDescripciones().then(renderDescripciones)); }
 async function pedirAplicar() { await _pedidoGenerico('aplicar_descripciones', 'btn-aplicar', '⬆ Subir aprobadas', () => cargarDescripciones().then(renderDescripciones)); }
@@ -1512,7 +1719,14 @@ function _reloj(txt) { return '<span class="reloj">⏳</span>' + (txt ? ' ' + es
 async function _pedidoGenerico(tipo, btnId, label, alTerminar) {
   const b = document.getElementById(btnId);
   const { data: ab } = await sb.from('marketing_pedidos').select('id').eq('tipo', tipo).in('estado', ['pendiente', 'en_curso']).limit(1);
-  if (!(ab && ab.length)) { const { error } = await sb.from('marketing_pedidos').insert({ tipo, pedido_por: session.email }); if (error) { toast('Error: ' + error.message, 'error'); return; } }
+  if (!(ab && ab.length)) {
+    const ok = await conPermiso('marketing.descripciones', async db => {   // (v69) hoy solo lo usan las dos de Descripciones
+      const { error } = await db.from('marketing_pedidos').insert({ tipo, pedido_por: session.email });
+      if (error) { toast('Error: ' + error.message, 'error'); return false; }
+      return true;
+    }, { accion: tipo === 'aplicar_descripciones' ? 'Subir a la web las descripciones aprobadas' : 'Pedir que Claude redacte descripciones' });
+    if (!ok) return;
+  }
   b.disabled = true; b.innerHTML = _reloj('Trabajando…');
   const timer = setInterval(async () => {
     const { data } = await sb.from('marketing_pedidos').select('estado, resultado, tomado_por').eq('tipo', tipo).order('id', { ascending: false }).limit(1);
@@ -1559,16 +1773,24 @@ async function guardarContenido() {
     titulo: document.getElementById('f-titulo').value.trim() || null, texto: document.getElementById('f-texto').value.trim() || null, hashtags: document.getElementById('f-hashtags').value.trim() || null,
     sku: document.getElementById('f-sku').value.trim() || null, imagen_url: document.getElementById('f-imagen').value.trim() || null, notas: document.getElementById('f-notas').value.trim() || null, updated_at: new Date().toISOString() };
   if (!row.titulo && !row.texto) { toast('Poné al menos un título o el texto', 'error'); return; }
-  const q = C_EDIT ? sb.from('marketing_contenido').update(row).eq('id', C_EDIT) : sb.from('marketing_contenido').insert({ ...row, creado_por: session.email });
-  const { error } = await q; if (error) { toast('Error: ' + error.message, 'error'); return; }
+  const ok = await conPermiso('marketing.contenido', async db => {
+    const { error } = await (C_EDIT ? db.from('marketing_contenido').update(row).eq('id', C_EDIT) : db.from('marketing_contenido').insert({ ...row, creado_por: session.email }));
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    return true;
+  }, { accion: C_EDIT ? 'Editar publicación' : 'Nueva publicación', contenido: C_EDIT || null, titulo: row.titulo, canal: row.canal, estado: row.estado });
+  if (!ok) return;
   cerrarContenido(); toast('✓ Guardado'); await cargarContenido(); renderContenido();
 }
 async function estadoContenido(id, estado) {
   const upd = { estado, updated_at: new Date().toISOString() };
   if (estado === 'aprobada') { upd.aprobado_por = session.email; upd.aprobado_at = new Date().toISOString(); }
   if (estado === 'publicada') upd.publicado_at = new Date().toISOString();
-  const { error } = await sb.from('marketing_contenido').update(upd).eq('id', id); if (error) { toast('Error: ' + error.message, 'error'); return; }
-  await cargarContenido(); renderContenido();
+  const ok = await conPermiso('marketing.contenido', async db => {
+    const { error } = await db.from('marketing_contenido').update(upd).eq('id', id);
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    return true;
+  }, { accion: { aprobada: 'Aprobar publicación', publicada: 'Marcar publicada', descartada: 'Descartar publicación' }[estado] || 'Publicación: ' + estado, contenido: id, titulo: (CONT.find(c => c.id === id) || {}).titulo || null });
+  if (ok) { await cargarContenido(); renderContenido(); }
 }
 
 // ── Tareas (web / redes / pauta) ──
@@ -1591,19 +1813,29 @@ function nuevaTarea() { document.getElementById('g-titulo').value = ''; document
 function cerrarTarea() { document.getElementById('w-overlay').classList.remove('open'); }
 async function guardarTarea() {
   const titulo = document.getElementById('g-titulo').value.trim(); if (!titulo) { toast('Falta el título', 'error'); return; }
-  const { error } = await sb.from('marketing_tareas').insert({ area: document.getElementById('g-area').value, prioridad: Number(document.getElementById('g-prio').value), titulo, detalle: document.getElementById('g-detalle').value.trim() || null, origen: 'manual' });
-  if (error) { toast('Error: ' + error.message, 'error'); return; }
+  const fila = { area: document.getElementById('g-area').value, prioridad: Number(document.getElementById('g-prio').value), titulo, detalle: document.getElementById('g-detalle').value.trim() || null, origen: 'manual' };
+  const ok = await conPermiso('marketing.tareas', async db => {
+    const { error } = await db.from('marketing_tareas').insert(fila);
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    return true;
+  }, { accion: 'Nueva tarea', titulo, area: fila.area });
+  if (!ok) return;
   cerrarTarea(); toast('✓ Tarea creada'); await cargarTareas(); renderTareas();
 }
 async function estadoTarea(id, estado) {
   const upd = { estado, hecha_por: estado === 'pendiente' ? null : session.email, hecha_at: estado === 'pendiente' ? null : new Date().toISOString() };
-  const { error } = await sb.from('marketing_tareas').update(upd).eq('id', id); if (error) { toast('Error: ' + error.message, 'error'); return; }
+  const ok = await conPermiso('marketing.tareas', async db => {
+    const { error } = await db.from('marketing_tareas').update(upd).eq('id', id);
+    if (error) { toast('Error: ' + error.message, 'error'); return false; }
+    return true;
+  }, { accion: { hecha: 'Tarea hecha', descartada: 'Descartar tarea', pendiente: 'Reabrir tarea' }[estado] || 'Tarea: ' + estado, tarea: id, titulo: (TAR.find(t => t.id === id) || {}).titulo || null });
+  if (!ok) return;
   await cargarTareas(); renderTareas();
 }
 // Las subventanas se cierran SOLO con ✕ / Cancelar / Escape (regla JP): nunca clickeando afuera.
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); cerrarFrase(); } });
 
 </script>
-<script src="manual.js?v=24"></script>
+<script src="manual.js?v=26"></script>
 </body>
 </html>

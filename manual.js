@@ -18,7 +18,21 @@ function _manualSecciones() {
       pasos: [
         'En el Hub, con el ícono 👤, ingresás con tu usuario y podés tildar "Confiar en esta computadora": después entrás a todos los módulos sin volver a escribir la clave.',
         'Código del celular (doble factor): si sos admin o directora y lo activaste en el Hub (panel de sesión, "Código del celular al entrar"), en cada computadora te pide, después de la clave, el código de 6 números de la app de autenticación del celular (Google o Microsoft Authenticator), y después una vez cada 30 días. En el celular registrado con "Entrar con la cara en este equipo" no hace falta ni clave ni código: te pide la cara (o la huella) al abrir. Si cambiás o perdés el celular, avisale a JP para darlo de baja.',
-        'Este módulo lo ven JP, Claudia y Administración.',
+        'Quién entra a este módulo lo decide JP desde el Hub (👤 → Permisos): entra quien tenga habilitada al menos una función de Marketing. Ver "Permisos" acá abajo.',
+      ],
+    },
+    {
+      icon: '🔑', titulo: 'Permisos: qué puede hacer cada una',
+      desc: 'Cada cosa del módulo es una función que JP maneja desde el Hub (👤 → Permisos), por perfil: Habilitada, Pide permiso u Oculta.',
+      pasos: [
+        'Habilitada: la usás sin que te pida nada.',
+        'Oculta: no la ves. Si una función oculta es todo un apartado (por ejemplo Contenido o Tablero), ese ícono no aparece en la barra. Si es una parte de Respuestas, desaparecen sus botones: sin "Responder" no están Enviar, Enviar todos, Ignorar ni Ocultar; sin "Pedir que redacten" no están ✨ y 🔄; sin "Editar las frases" no están el ✏️ ni "+ Nueva" de las frases rápidas (las podés usar igual).',
+        'Pide permiso: la ves, pero al usarla se abre "Pedir autorización". Ahí una persona que tenga esa función habilitada escribe SU mail y SU clave personales (los de RRHH; las cuentas de los locales y de la oficina nunca autorizan) y toca Autorizar. Si tiene el código del celular, también lo pide. Tu sesión no cambia.',
+        'Cuándo pide: en Hoy, Tablero, Oportunidades, Publicaciones y Pauta, al entrar al apartado, y esa autorización vale 10 minutos. En el resto, cada vez que grabás (enviar una respuesta, aprobar una descripción, guardar una tarea o una publicación, etc.): vale para esa vez. "Enviar todos" pide una sola autorización para todas las respuestas.',
+        'Lo que grabás con autorización lo graba el usuario de quien autorizó (su sesión queda abierta solo mientras se graba y se cierra sola). Queda anotado quién autorizó, quién lo pidió, qué y cuándo.',
+        'Las funciones son: Ver el resumen del día · Responder comentarios y mensajes · Pedir que redacten respuestas o traigan mensajes · Editar las frases guardadas · Ver métricas · Ver y seguir oportunidades de venta · Ver publicaciones · Ver la pauta · Cargar y editar contenido · Aprobar descripciones y subirlas a la web · Tareas de la web.',
+        'La base controla lo mismo: lo oculto no se puede leer ni grabar, y lo que pide permiso solo lo puede grabar alguien que lo tenga habilitado, aunque se intente por fuera de la pantalla.',
+        'Si JP marcó una función con 📷 Registra quién en el Hub, al usarla se pide quién la está haciendo (por la cara, o tocando tu nombre en la lista); con usuario personal se anota solo. Pasa justo antes de grabar (y después de la autorización, si la función pide permiso). Si cerrás esa ventana, no se graba nada. No se guarda ninguna foto: queda quién fue, cuándo, con qué cuenta y qué hizo (por ejemplo "Enviar respuesta" y a quién). JP lo ve en el Hub → Permisos → Registro. Lo de solo mirar (Hoy, Tablero, Publicaciones, Pauta) no lo pide.',
       ],
     },
     {
@@ -28,6 +42,7 @@ function _manualSecciones() {
         'Arriba, cuatro números: mensajes sin responder (rojo si alguno pasó las 2 horas), respondidos hoy, descripciones por aprobar y tareas pendientes. Tocando cada uno vas a la pestaña.',
         'Abajo, la lista de lo urgente: cada mensaje que espera hace más de 2 horas con su botón Responder, las descripciones, las tareas de prioridad alta y el último resumen semanal.',
         'El resumen semanal llega también al celular los lunes a las 8.',
+        'Hoy muestra solo lo de los apartados que tu perfil puede abrir (por ejemplo, sin Descripciones no aparece ese número). Si tu perfil no tiene "Ver el resumen del día", el módulo arranca en el primer apartado que tengas.',
         'Cuando ya hay lecturas de Google aparece un quinto número: reseñas de Google sin responder, con el rating de cada local. Tocándolo vas directo a esas reseñas.',
       ],
     },
