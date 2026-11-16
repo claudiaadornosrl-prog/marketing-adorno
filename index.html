@@ -662,7 +662,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
       <button class="hbtn ab-fijo" onclick="doLogout()" title="Salir" aria-label="Salir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span class="lb">Salir</span></button>
     </div>
   </header>
-  <script src="/hub/banner.js?v=6"></script>
+  <script src="/hub/banner.js?v=7"></script>
   <main>
 
     <section id="content-hoy" class="tab-content active">
@@ -874,7 +874,7 @@ async function entrar(user) {
   document.getElementById('franja-prueba').style.display = MODO_PRUEBA ? 'block' : 'none';
   await init();
 }
-async function doLogout() { await sb.auth.signOut(); location.reload(); }
+async function doLogout() { if (window.ADORNO_VERCOMO) return ADORNO_VERCOMO.salir(); await sb.auth.signOut(); location.reload(); }
 (async () => {
   const { data: { session: s } } = await sb.auth.getSession();
   if (s && ADORNO_SSO.entraDirecto(MODULO, s.user?.email)) await entrar(s.user);
@@ -918,14 +918,20 @@ async function cargarPermisos() {
   const b = document.body.classList;
   b.toggle('mk-sin-responder', perm('marketing.responder') === 'o'); b.toggle('mk-sin-redactar', perm('marketing.redactar') === 'o'); b.toggle('mk-sin-frases', perm('marketing.frases') === 'o');
 }
-const _avisoOculta = f => toast(`Tu perfil no tiene habilitado «${FUNC_NOMBRE[f]}». Los permisos se manejan desde el Hub.`, 'error');
+const _avisoOculta = f => toast(`${window.ADORNO_VERCOMO ? ADORNO_VERCOMO.nombre + ' no tiene' : 'Tu perfil no tiene'} habilitado «${FUNC_NOMBRE[f]}». Los permisos se manejan desde el Hub.`, 'error');
 // Anota la autorización con la sesión de quien autorizó (la base pone su mail); pedido_por = quien la pidió
 const _anotarAutorizacion = (a, f) => a.cli.from('marketing_autorizaciones').insert({ funcion: f, pedido_por: session.email, autorizo_nombre: a.nombre }).then(() => {}, () => {});
 // Apartados de "ver": true si se puede entrar ya (habilitada, o autorizada hace menos de 10 min); con 'a' pide la autorización
+// (v72, 16-nov-2026, infra) «Ver como» del Hub (window.ADORNO_VERCOMO, /hub/banner.js): JP mira el módulo como otra cuenta, en
+// solo lectura. Nunca se graba ni se envía nada. Habilitada u oculta: se avisa qué permiso tiene esa cuenta. «Pide permiso»: se abre
+// la ventana de autorización igual, solo para mirar (JP: «necesitaría ver que la parte de pedir permiso esté funcionando bien»).
+const _PERM_TXT = { h: 'habilitada', a: 'con «Pide permiso»', o: 'oculta' };
+const _avisoVerComo = f => toast(`«Ver como» es solo para mirar: no se graba ni se envía nada. ${ADORNO_VERCOMO.nombre} tiene «${FUNC_NOMBRE[f]}» ${_PERM_TXT[perm(f)]}.`);
 async function puedeVer(f) {
   const e = perm(f);
   if (e === 'h' || (AUT_HASTA[f] || 0) > Date.now()) return true;
   if (e === 'o') { _avisoOculta(f); return false; }
+  if (window.ADORNO_VERCOMO) return (await pedirAutorizacion(f, true)) === 'mirar';   // la ventana, con «Mirar igual»
   const a = await pedirAutorizacion(f);
   if (!a) return false;
   await _anotarAutorizacion(a, f); await a.salir();
@@ -939,6 +945,11 @@ async function puedeVer(f) {
 // antes de grabar se anota quién lo hizo (ver _registrarQuien). Si la persona cancela, no se graba nada.
 async function conPermiso(f, grabar, detalle) {
   const e = perm(f);
+  if (window.ADORNO_VERCOMO) {   // (v72) en «Ver como» no sale nada: ni anota quién, ni graba, ni envía
+    if (e === 'a') await pedirAutorizacion(f);   // se abre solo para mirar y siempre vuelve sin autorización
+    else _avisoVerComo(f);
+    return;
+  }
   if (e === 'o') { _avisoOculta(f); return; }
   if (e === 'h') { if (!(await _registrarQuien(f, detalle))) return; return grabar(sb); }
   const a = await pedirAutorizacion(f);
@@ -978,22 +989,36 @@ function _nombrePersona(n) {   // 'DONZELLI, SORAYA' → 'Soraya Donzelli'
 // Autoriza quien, con SU sesión, pasa hub_autoriza(función): admin, o una persona con legajo (nunca una cuenta genérica de
 // local u oficina) con la función habilitada ('h'). Devuelve { email, nombre, cli, salir } con esa sesión ABIERTA (la cierra
 // quien la usa, con salir(), apenas termina), o null si se canceló.
-function pedirAutorizacion(f) {
+// (v72) En «Ver como» se abre igual pero solo para mirar: muestra quién podría autorizar a esa cuenta (hub_autorizantes, la misma
+// lista de la ventana común del Hub), los campos y Autorizar quedan trabados y vuelve null (o 'mirar' con «Mirar igual», si mirar).
+function pedirAutorizacion(f, mirar) {
+  const vc = window.ADORNO_VERCOMO;
   return new Promise(listo => {
-    let ultimo = ''; try { ultimo = localStorage.getItem('mk_autoriza') || ''; } catch (e) {}
+    let ultimo = ''; if (!vc) try { ultimo = localStorage.getItem('mk_autoriza') || ''; } catch (e) {}
     const ov = document.createElement('div'); ov.className = 'aut-fondo';
     ov.setAttribute('data-adorno-superior', '1');   // para /hub/equipo.js: acá va el usuario personal de quien autoriza, no el del equipo
     ov.innerHTML = `<div class="aut-caja" role="dialog" aria-modal="true">
       <h3>Pedir autorización</h3>
-      <div class="mini">«${esc(FUNC_NOMBRE[f])}»: tu perfil la tiene con permiso. La autoriza alguien que la tenga habilitada, con su usuario personal (el mismo mail y clave de RRHH; la cuenta del local o de la oficina no sirve). ${TAB_AL_ENTRAR[_tabDe(f)] === f ? `Vale ${AUT_MIN} minutos` : 'Vale para esta vez'} y queda anotado quién autorizó.</div>
-      <input type="email" id="aut-mail" placeholder="mail de quien autoriza" autocomplete="username" value="${esc(ultimo)}">
-      <input type="password" id="aut-pass" placeholder="su contraseña" autocomplete="current-password">
+      <div class="mini">«${esc(FUNC_NOMBRE[f])}»: ${vc ? 'el perfil de ' + esc(vc.nombre) : 'tu perfil'} la tiene con permiso. La autoriza alguien que la tenga habilitada, con su usuario personal (el mismo mail y clave de RRHH; la cuenta del local o de la oficina no sirve). ${TAB_AL_ENTRAR[_tabDe(f)] === f ? `Vale ${AUT_MIN} minutos` : 'Vale para esta vez'} y queda anotado quién autorizó.</div>
+      ${vc ? `<div class="mini" id="aut-vc">👁 «Ver como»: esta es la ventana que le aparece a ${esc(vc.nombre)}. Es solo para mirar: no se puede autorizar ni se graba nada.<br>Pueden autorizar: <span id="aut-lista">buscando…</span></div>` : ''}
+      <input type="email" id="aut-mail" placeholder="mail de quien autoriza" autocomplete="username" value="${esc(ultimo)}"${vc ? ' disabled' : ''}>
+      <input type="password" id="aut-pass" placeholder="su contraseña" autocomplete="current-password"${vc ? ' disabled' : ''}>
       <div class="aut-err" id="aut-err"></div>
-      <div class="aut-btns"><button type="button" class="btn" id="aut-no">Cancelar</button><button type="button" class="btn primary" id="aut-si">Autorizar</button></div></div>`;
+      <div class="aut-btns"><button type="button" class="btn" id="aut-no">Cancelar</button>${vc && mirar ? '<button type="button" class="btn" id="aut-mirar">Mirar igual</button>' : ''}<button type="button" class="btn primary" id="aut-si"${vc ? ' disabled style="opacity:.4;cursor:not-allowed"' : ''}>Autorizar</button></div></div>`;
     document.body.appendChild(ov);
     const $ = s => ov.querySelector(s), fin = r => { ov.remove(); listo(r); }, err = t => { $('#aut-err').textContent = t; };
     $('#aut-no').onclick = () => fin(null);
     ov.addEventListener('keydown', e => { if (e.key === 'Escape') fin(null); });
+    if (vc) {
+      if ($('#aut-mirar')) $('#aut-mirar').onclick = () => fin('mirar');
+      sb.rpc('hub_autorizantes', { p_funcion: f, p_local: MK_LOCAL }).then(({ data, error }) => {
+        const l = $('#aut-lista'); if (!l) return;
+        const p = (!error && data && Array.isArray(data.personas)) ? data.personas : null;
+        l.textContent = !p ? 'no se pudo ver la lista' : p.length ? p.map(x => _nombrePersona(x.nombre) + (x.presente ? ' (está ahora)' : '')).join(', ') : 'nadie (revisá los perfiles en el Hub)';
+      });
+      setTimeout(() => ($('#aut-mirar') || $('#aut-no')).focus(), 50);
+      return;   // en «Ver como» no se arma nada más: ni Enter, ni Autorizar
+    }
     $('#aut-pass').addEventListener('keydown', e => { if (e.key === 'Enter') $('#aut-si').click(); });
     $('#aut-si').onclick = async () => {
       const email = $('#aut-mail').value.trim().toLowerCase(), pass = $('#aut-pass').value, bt = $('#aut-si');
@@ -1145,7 +1170,7 @@ async function marcarPublicada(id) {
   await conPermiso('marketing.responder', async db => {
     const { error } = await db.from('marketing_mensajes').update({ respuesta: t || null, estado: 'enviado', respondido: true, enviado_por: session.email, enviado_at: new Date().toISOString() }).eq('id', id).eq('estado', 'pendiente');
     if (error) { toast('Error: ' + error.message, 'error'); return; }
-    delete BORR[id]; try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+    delete BORR[id]; try { window.ADORNO_VERCOMO || localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
     toast('✓ Marcada como publicada en Google');
   }, { accion: 'Publicada en Google', ..._detMsg(m) });
   await cargarMensajes(); renderMensajes();
@@ -1565,12 +1590,13 @@ function _tarjetaMensaje(m, l) {
 }
 function _nombre(a) { a = (a || '').trim(); return (a.includes(' ') && !a.includes('.') && !a.includes('_')) ? a.split(' ')[0] + ', ' : ''; }
 // ── (v44) Borradores: lo que escribís en cada tarjeta se guarda en el navegador y sobrevive al refresco, a cambiar de filtro y a cerrar la pestaña ──
-let BORR = {}; try { BORR = JSON.parse(localStorage.getItem('mk_borradores') || '{}'); } catch (e) { BORR = {}; }
+// (v72) En «Ver como» no se muestran ni se pisan los borradores de este navegador (son de JP, no de la cuenta que mira).
+let BORR = {}; try { BORR = window.ADORNO_VERCOMO ? {} : JSON.parse(localStorage.getItem('mk_borradores') || '{}'); } catch (e) { BORR = {}; }
 function _borr(id) { return BORR[id] || {}; }
 function guardarBorrador(id, campo, el) {
   BORR[id] = Object.assign(BORR[id] || {}, { [campo]: el.value });
   el.classList.add('editado');
-  try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+  try { window.ADORNO_VERCOMO || localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
   actualizarEnviarTodos();
 }
 // ── (v47) Emojis: popover chico con los que usa Clau; se pegan donde está el cursor del último cuadro tocado ──
@@ -1596,14 +1622,14 @@ function pegarEmoji(id, e) {
 document.addEventListener('click', ev => { if (!ev.target.closest('.emoji-pop') && !ev.target.closest('.emoji-btn')) { document.querySelectorAll('.emoji-pop').forEach(x => x.remove()); document.querySelectorAll('.emoji-btn.on').forEach(x => x.classList.remove('on')); } });
 function toggleIncluir(id, on) {   // (v46) casilla por tarjeta: sin tilde, "Enviar todos" la saltea
   BORR[id] = Object.assign(BORR[id] || {}, { incluir: on });
-  try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+  try { window.ADORNO_VERCOMO || localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
   const card = document.getElementById('msg-' + id); if (card) card.classList.toggle('excluida', !on);
   actualizarEnviarTodos();
 }
 function _limpiarBorradores() {   // borra los borradores de mensajes que ya no están pendientes
   let cambio = false;
   for (const id of Object.keys(BORR)) { const m = MSG.find(x => x.id === Number(id)); if (!m || m.estado !== 'pendiente') { delete BORR[id]; cambio = true; } }
-  if (cambio) try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+  if (cambio) try { window.ADORNO_VERCOMO || localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
 }
 // ── (v44) Enviar todos: manda de una vez todas las respuestas de la vista actual (cuenta + red + tipo) ──
 function _candidatosEnviarTodos() {
@@ -1636,7 +1662,7 @@ async function enviarTodos() {
       const { error } = await db.from('marketing_mensajes').update({ respuesta: x.t, respuesta_dm: x.dm, estado: 'para_enviar', enviado_por: session.email }).eq('id', x.m.id).eq('estado', 'pendiente');
       if (!error) { n++; delete BORR[x.m.id]; }
     }
-    try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+    try { window.ADORNO_VERCOMO || localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
     await _pedirEnvio(db);
     return n;
   }, { accion: 'Enviar todos', cantidad: c.length, comentarios: nCo, privados: nDm, editadas: ed, mensajes: c.map(x => x.m.id).slice(0, 100) });
@@ -1654,7 +1680,7 @@ async function enviarMensaje(id) {
     return true;
   }, { accion: 'Enviar respuesta', ..._detMsg(MSG.find(x => x.id === id)) });
   if (!ok) return;
-  delete BORR[id]; try { localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
+  delete BORR[id]; try { window.ADORNO_VERCOMO || localStorage.setItem('mk_borradores', JSON.stringify(BORR)); } catch (e) {}
   toast('✓ Enviando (menos de 1 minuto)'); await cargarMensajes(); renderMensajes();
   clearTimeout(window._envTimer); window._envTimer = setTimeout(() => cargarMensajes().then(renderMensajes), 70000);
 }
@@ -1874,6 +1900,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); cerrarFrase(); } });
 
 </script>
-<script src="manual.js?v=27"></script>
+<script src="manual.js?v=28"></script>
 </body>
 </html>
