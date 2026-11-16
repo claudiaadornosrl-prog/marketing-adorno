@@ -662,7 +662,7 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
       <button class="hbtn ab-fijo" onclick="doLogout()" title="Salir" aria-label="Salir"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span class="lb">Salir</span></button>
     </div>
   </header>
-  <script src="/hub/banner.js?v=7"></script>
+  <script src="/hub/banner.js?v=8"></script>
   <main>
 
     <section id="content-hoy" class="tab-content active">
@@ -861,7 +861,7 @@ async function doLogin() {
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
     if (error) throw error;
     await entrar(data.user);
-  } catch (e) { errEl.textContent = 'Error: ' + (e.message || 'desconocido'); }
+  } catch (e) { errEl.textContent = window.ADORNO_AVISO ? ADORNO_AVISO.traducir('No se pudo ingresar: ' + (e.message || 'error desconocido')).texto : 'Error: ' + (e.message || 'desconocido'); }
   finally { document.getElementById('btn-login').disabled = false; }
 }
 async function entrar(user) {
@@ -985,6 +985,9 @@ function _nombrePersona(n) {   // 'DONZELLI, SORAYA' → 'Soraya Donzelli'
   const [ap, no] = t.split(',');
   return (no.trim() + ' ' + ap.trim()).toLowerCase().replace(/(^|\s)\S/g, x => x.toUpperCase());
 }
+// (v73, 16-nov-2026, infra, JP: «que se entiendan los errores, que no sean muy técnicos») errores que no salen por toast:
+// pasan por ADORNO_AVISO.traducir (/hub/banner.js v8) → castellano simple; si el banner no cargó, el texto tal cual.
+const _trad = m => (m && window.ADORNO_AVISO && ADORNO_AVISO.traducir) ? ADORNO_AVISO.traducir(m).texto : m;
 // Ventana de autorización: usuario personal de quien autoriza, en una sesión aparte (no toca la de este equipo).
 // Autoriza quien, con SU sesión, pasa hub_autoriza(función): admin, o una persona con legajo (nunca una cuenta genérica de
 // local u oficina) con la función habilitada ('h'). Devuelve { email, nombre, cli, salir } con esa sesión ABIERTA (la cierra
@@ -1040,7 +1043,7 @@ function pedirAutorizacion(f, mirar) {
         fin({ email, nombre, cli, salir });
       } catch (e) {
         await salir();
-        err(e.message || 'No se pudo autorizar.');
+        err(_trad(e.message) || 'No se pudo autorizar.');
         bt.disabled = false; $('#aut-no').disabled = false; bt.textContent = 'Autorizar'; $('#aut-pass').value = '';
       }
     };
@@ -1441,7 +1444,7 @@ function _vigilarPedido() {
     if (p.estado === 'pendiente') { b.innerHTML = _reloj(); b.title = 'Esperando una PC con Claude…'; return; }
     if (p.estado === 'en_curso') { b.innerHTML = _reloj(); b.title = 'Redactando en ' + (p.tomado_por || '…'); return; }
     clearInterval(window._pedTimer); b.disabled = false; b.textContent = '✨'; b.title = 'Mejorar respuestas: Claude redacta una respuesta a medida para cada mensaje pendiente (no envía nada)';
-    toast(p.estado === 'hecho' ? '✓ Listo: ' + (p.resultado || '') : '✗ ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
+    toast(p.estado === 'hecho' ? '✓ Listo: ' + (p.resultado || '') : '✗ No se pudieron redactar las respuestas: ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');   // (v73) contexto en castellano; lo técnico queda en «Ver detalle técnico»
     await cargarMensajes(); renderMensajes();
   }, 5000);
 }
@@ -1463,7 +1466,7 @@ async function pedirTraer() {
     const { data } = await sb.from('marketing_pedidos').select('estado, resultado').eq('tipo', 'traer').order('id', { ascending: false }).limit(1);
     const p = data && data[0]; if (!p || p.estado === 'pendiente' || p.estado === 'en_curso') return;
     clearInterval(window._traerTimer); b.disabled = false; b.textContent = '🔄'; b.title = 'Buscar ahora: el servidor va a Instagram y Facebook a traer mensajes y comentarios nuevos (si no, lo hace solo cada 10 min)';
-    toast(p.estado === 'hecho' ? '✓ ' + (p.resultado || 'listo') : '✗ ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
+    toast(p.estado === 'hecho' ? '✓ ' + (p.resultado || 'listo') : '✗ No se pudieron traer los mensajes nuevos: ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
     await cargarMensajes(); renderMensajes();
   }, 4000);
 }
@@ -1798,7 +1801,7 @@ async function _pedidoGenerico(tipo, btnId, label, alTerminar) {
     if (p.estado === 'pendiente') { b.innerHTML = _reloj('Esperando…'); return; }
     if (p.estado === 'en_curso') { b.innerHTML = _reloj(p.tomado_por || '…'); return; }
     clearInterval(timer); b.disabled = false; b.textContent = label;
-    toast(p.estado === 'hecho' ? '✓ ' + (p.resultado || 'listo') : '✗ ' + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
+    toast(p.estado === 'hecho' ? '✓ ' + (p.resultado || 'listo') : (tipo === 'aplicar_descripciones' ? '✗ No se pudieron subir las descripciones a la web: ' : '✗ No se pudieron redactar las descripciones: ') + (p.resultado || 'error'), p.estado === 'hecho' ? '' : 'error');
     alTerminar();
   }, 5000);
 }
@@ -1900,6 +1903,6 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); cerrarFrase(); } });
 
 </script>
-<script src="manual.js?v=28"></script>
+<script src="manual.js?v=29"></script>
 </body>
 </html>
