@@ -1,6 +1,6 @@
 // Service Worker · network-first para HTML, cache-first para assets
-const CACHE_VERSION = 'marketing-v75-clodi-iphone';
-const CACHE_ASSETS = ['fonts/URWGothic-Book.ttf', './', './index.html', './manual.js', './manifest.webmanifest'];
+const CACHE_VERSION = 'marketing-v76-tablas-clodi';
+const CACHE_ASSETS = ['fonts/URWGothic-Book.ttf', './', './index.html', './manual.js', './adorno-tablas.js', './manifest.webmanifest'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_VERSION).then(c => c.addAll(CACHE_ASSETS)).catch(err => console.warn('[SW]', err)));
   self.skipWaiting();

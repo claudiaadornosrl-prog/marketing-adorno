@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta charset="UTF-8">
 <script>
 // ═══ SESIÓN COMPARTIDA ENTRE MÓDULOS · SSO Adorno (10-sep-2026) ═══
 // Todos los módulos viven en el mismo origen (claudiaadornosrl-prog.github.io),
@@ -93,6 +94,25 @@ window.ADORNO_ASISTENTE = (function () {
     els.forEach((el) => { const lb = limpiar(el.getAttribute('title') || (el.querySelector('.lb') && el.querySelector('.lb').textContent) || el.textContent); if (lb && !out.some((o) => o.lb === lb)) out.push({ lb, el }); });
     return out;
   }
+  // (19-nov-2026, charla de Clodi) «llevame a…» entre módulos: el servidor manda ir_modulo {nombre, ruta, pestana?, llevar?}
+  function irUrl(m) {
+    if (!m || !/^\/[a-z0-9-]+\/$/.test(String(m.ruta || ''))) return '';
+    if (location.pathname.replace(/index\.html$/, '') === m.ruta) return '';   // ya está en ese módulo
+    return m.ruta + (m.pestana ? '#clodi-ir=' + encodeURIComponent(String(m.pestana).slice(0, 60)) : '');
+  }
+  function irModulo(m) {   // solo cuando pidió que la lleven: espera a que termine de hablar y va
+    const u = irUrl(m); if (!u) return; let n = 0;
+    const t = setInterval(() => { n++; let habla = false; try { habla = 'speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending); } catch (_) {} if ((n > 3 && !habla) || n > 60) { clearInterval(t); location.href = u; } }, 400);
+  }
+  function llegar() {   // al entrar desde el botón de Clodi: abre la pestaña que venía pedida (espera a que el módulo arme sus pestañas)
+    const m = /[#&]clodi-ir=([^&]+)/.exec(location.hash || ''); if (!m) return;
+    let q = ''; try { q = decodeURIComponent(m[1]).toLowerCase(); } catch (_) { return; }
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
+    let n = 0; const t = setInterval(() => {
+      const ps = pestanas(); const p = ps.find((x) => x.lb.toLowerCase() === q) || ps.find((x) => x.lb.toLowerCase().includes(q) || q.includes(x.lb.toLowerCase()));
+      if (p) { clearInterval(t); irA(p.lb); } else if (++n > 40) clearInterval(t);
+    }, 500);
+  }
   function irA(nombre) {
     const p = pestanas().find((x) => x.lb.toLowerCase() === String(nombre).toLowerCase());
     if (!p) return;
@@ -145,7 +165,7 @@ window.ADORNO_ASISTENTE = (function () {
   .asist-card{align-self:stretch;border:1px solid var(--accent,#d97757);border-radius:12px;padding:9px 11px;background:var(--surface,#fff);line-height:1.4}
   .asist-bts{display:flex;gap:8px;margin-top:9px} .asist-bt{border:0;border-radius:999px;padding:7px 16px;font:inherit;font-weight:600;cursor:pointer}
   .asist-bt.si{background:var(--accent,#d97757);color:#fff} .asist-bt.no{background:transparent;color:var(--muted,#5f5e5a);border:0.5px solid var(--border,#d3d1c7)}
-  .asist-bt:disabled{opacity:.6;cursor:default} .asist-fin{margin-top:8px;font-size:13px} .asist-fin.ok{color:#166534} .asist-fin.mal{color:#991b1b}
+  .asist-bt:disabled{opacity:.6;cursor:default} a.asist-bt{text-decoration:none;display:inline-block} .asist-fin{margin-top:8px;font-size:13px} .asist-fin.ok{color:#166534} .asist-fin.mal{color:#991b1b}
   .asist-resalta{outline:3px solid var(--accent,#d97757)!important;outline-offset:2px;border-radius:8px;transition:outline-color 1.2s}
   @media (max-width:600px){.asist-panel{right:calc(8px + env(safe-area-inset-right,0px));left:calc(8px + env(safe-area-inset-left,0px));width:auto;bottom:calc(92px + env(safe-area-inset-bottom,0px));max-height:66vh;max-height:66dvh}}
   /* (28-oct, JP) en celular y tablet: cara redonda flotante, despegada del borde (en iPhone la barra de Safari se achica abajo y tapaba el busto) */
@@ -361,7 +381,7 @@ window.ADORNO_ASISTENTE = (function () {
     if (tipo === 'q') { d.className = 'asist-q'; d.textContent = texto; }
     else if (tipo === 'err') { d.className = 'asist-err'; d.textContent = texto; }
     else if (tipo === 'wait') { d.className = 'asist-fila'; d.innerHTML = `<span class="asist-av">${CLODI('cara')}</span><div class="asist-a asist-wait"><i>Clodi está buscando en el manual…</i></div>`; d.querySelector('.clodi').classList.add('piensa'); }
-    else { d.className = 'asist-fila'; d.innerHTML = `<span class="asist-av">${CLODI('cara')}</span><div class="asist-a"></div>`; d.lastChild.innerHTML = esc(texto.respuesta) + (texto.pestana ? `<br><i>→ pestaña <b>${esc(texto.pestana)}</b></i>` : '') + ('speechSynthesis' in window ? ` <button class="asist-ib" title="Escuchar la respuesta" data-a="leer" data-t="${esc(texto.respuesta)}">${ICO.voz}</button>` : ''); }
+    else { d.className = 'asist-fila'; d.innerHTML = `<span class="asist-av">${CLODI('cara')}</span><div class="asist-a"></div>`; d.lastChild.innerHTML = esc(texto.respuesta) + (texto.pestana ? `<br><i>→ pestaña <b>${esc(texto.pestana)}</b></i>` : '') + (irUrl(texto.ir_modulo) ? `<div class="asist-bts"><a class="asist-bt si asist-ir" href="${esc(irUrl(texto.ir_modulo))}">Ir a ${esc(texto.ir_modulo.nombre || 'ese módulo')} →</a></div>` : '') + ('speechSynthesis' in window ? ` <button class="asist-ib" title="Escuchar la respuesta" data-a="leer" data-t="${esc(texto.respuesta)}">${ICO.voz}</button>` : ''); }
     l.appendChild(d); l.scrollTop = l.scrollHeight; return d;
   }
   async function prepararAccion(acc, porVoz) {   // completa el formulario del módulo; se envía SOLO con el botón Enviar
@@ -401,12 +421,14 @@ window.ADORNO_ASISTENTE = (function () {
       if (!r.ok || !j.ok) throw new Error(j.error || ('Error ' + r.status));
       hist.push({ q, a: j.respuesta }); log('a', j);
       if (j.pestana && !j.accion) irA(j.pestana);
+      if (j.ir_modulo && j.ir_modulo.llevar && !j.accion) irModulo(j.ir_modulo);
       if (porVoz || siempreVoz()) leer(j.respuesta);
       if (j.accion) await prepararAccion(j.accion, porVoz);
     } catch (e) { w.remove(); log('err', e.message || String(e)); }
     finally { ocupado = false; ta.focus(); }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', armar); else armar();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', llegar); else llegar();
   return { abrir, cerrar, preguntar: (q) => { abrir(); panel.querySelector('textarea').value = q; enviar(false); },
     // para soporte: qué voz y ajustes usa Clodi en este equipo
     decir: (t) => { armar(); leer(String(t || '')); },   // para probar la voz y la boca
@@ -459,7 +481,6 @@ window.ADORNO_SSO = (function () {
   };
 })();
 </script>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#A3656F">
 <link rel="stylesheet" href="/hub/banner.css?v=6"><!-- banner común de los módulos (infra, 11-nov-2026) -->
@@ -698,7 +719,11 @@ nav.tabs button .count:not(:empty) { display: inline-block; }
 .subtabs button.active { background: var(--primary); color: white; border-color: var(--primary); }
 .subtabs .count { background: #f59e0b; color: #fff; padding: 1px 7px; border-radius: 10px; font-size: 11px; margin-left: 4px; font-weight: 700; display: none; }
 .subtabs .count:not(:empty) { display: inline-block; }
-#t-shopify tbody tr:nth-child(even) td, #t-shopify tr:nth-child(even) td { background: #fdf2f8; }
+/* (v76, 19-nov) las tablas las arma la pieza común adorno-tablas.js (cebra, títulos fijos, ordenar, filtrar…): sin cebra propia */
+:root { --bd: var(--border); --tx: var(--text); --mut: var(--muted); }
+/* el molde pone table { overflow: hidden } (para las puntas redondeadas) y eso hace de la tabla una caja con scroll propio:
+   los títulos fijos no se pegaban arriba al bajar. clip recorta igual las puntas pero no arma caja, y el sticky anda. */
+table.tt { overflow: clip; }
 </style>
 </head>
 <body>
@@ -1128,7 +1153,11 @@ function pedirAutorizacion(f, mirar) {
 }
 // Cambiar de apartado: los ocultos no se abren; los de "ver" con permiso piden la autorización al entrar
 const _switchTabBase = switchTab;
+// (v76, 19-nov) Clodi puede llegar con #clodi-ir=<apartado> (botón «Ir a Marketing →») y toca la pestaña apenas carga la página,
+//   antes de que estén los permisos: con PERM vacío todo se ve oculto y el toque se perdía. Se guarda y se abre al final de init().
+let _permListo = false, _tabPendiente = null;
 switchTab = async function (k) {
+  if (!_permListo) { _tabPendiente = k; return; }
   if (!tabVisible(k)) return;
   const f = TAB_AL_ENTRAR[k];
   if (f && perm(f) === 'a' && !(await puedeVer(f))) return;
@@ -1137,12 +1166,16 @@ switchTab = async function (k) {
 
 async function init() {
   document.getElementById('franja-prueba').style.display = 'none';
-  await cargarPermisos();
+  await cargarPermisos(); _permListo = true;
   await Promise.all([cargarMetricas(), cargarContenido(), cargarTareas(), cargarMensajes(), cargarFrases(), cargarPosts(), cargarDescripciones()]);
   renderTablero(); renderContenido(); renderTareas(); renderMensajes(); renderOportunidades(); renderPosts(); renderDescripciones(); renderHoy();
   // el primer apartado: Hoy si está habilitado; si no, el primero que no pida autorización (o el primero visible)
   const tabs = Object.keys(TAB_FUNC), ini = tabs.find(k => tabVisible(k) && !(TAB_AL_ENTRAR[k] && perm(TAB_AL_ENTRAR[k]) === 'a')) || tabs.find(tabVisible);
-  if (ini !== 'hoy') { document.getElementById('content-hoy').classList.remove('active'); document.getElementById('tab-hoy').classList.remove('active'); if (ini) switchTab(ini); }
+  // (v76) si Clodi pidió un apartado al llegar, se abre ese (pidiendo autorización si hace falta, una sola ventana)
+  const _pide = k => !!(TAB_AL_ENTRAR[k] && perm(TAB_AL_ENTRAR[k]) === 'a');
+  const pedida = _tabPendiente && tabVisible(_tabPendiente) ? _tabPendiente : null; _tabPendiente = null;
+  if (ini !== 'hoy') { document.getElementById('content-hoy').classList.remove('active'); document.getElementById('tab-hoy').classList.remove('active'); if (ini && ini !== pedida && !(pedida && _pide(ini))) switchTab(ini); }
+  if (pedida && !(pedida === 'hoy' && ini === 'hoy')) switchTab(pedida);
   setInterval(() => cargarMensajes().then(() => {
     const act = document.getElementById('content-respuestas').classList.contains('active');
     const ocupado = document.getElementById('m-lista').contains(document.activeElement) || [...document.querySelectorAll('#m-lista video, #m-lista audio')].some(v => !v.paused);
@@ -1186,9 +1219,9 @@ function renderTablero() {
   const serie = dias.map(f => ({ f, s: _suma('shopify', 'sesiones', f, f), c: _suma('shopify', 'carrito', f, f), p: _suma('shopify', 'pedidos', f, f), v: _suma('shopify', 'ventas_netas', f, f) }));
   const max = Math.max(1, ...serie.map(x => x.s));
   let h = `<div class="mini">Sesiones por día</div><div class="barras">${serie.map(x => `<div style="height:${Math.round(x.s / max * 100)}%" title="${x.f.split('-').reverse().slice(0,2).join('/')}: ${x.s} sesiones"></div>`).join('')}</div>`;
-  h += `<table><tr><th>Día</th><th class="num">Sesiones</th><th class="num">Carrito</th><th class="num">Pedidos</th><th class="num">Ventas</th></tr>`
+  h += `<table><thead><tr><th>Día</th><th class="num">Sesiones</th><th class="num">Carrito</th><th class="num">Pedidos</th><th class="num">Ventas</th></tr></thead><tbody>`
     + serie.slice().reverse().filter(x => x.s || x.p).slice(0, 31).map(x => `<tr><td>${x.f.split('-').reverse().join('/')}</td><td class="num">${x.s}</td><td class="num">${x.c || ''}</td><td class="num">${x.p || ''}</td><td class="num">${x.v ? plata(x.v) : ''}</td></tr>`).join('')
-    + `</table>`;
+    + `</tbody></table>`;
   if (!serie.some(x => x.s || x.p)) h = '<div class="empty">Sin datos de Shopify para este período.</div>';
   document.getElementById('t-shopify').innerHTML = h;
   renderRedes(r, d1, d2, p1, p2);
@@ -1304,7 +1337,7 @@ function renderGoogle(d1) {
   if (lista.length) {
     const dist = [5, 4, 3, 2, 1].map(n => `${n}★ ${lista.filter(m => m.estrellas === n).length}`).join(' · ');
     h += `<div class="mini">Reseñas del período que llegaron a la bandeja (Google pasa hasta 5 por local): ${dist}</div>`
-      + `<table><tr><th>Fecha</th><th>Local</th><th>Estrellas</th><th>Quién</th><th>Estado</th></tr>` + lista.slice(0, 15).map(m => `<tr><td>${m.fecha.slice(0, 10).split('-').reverse().join('/')}</td><td>${esc(NOM_LOCAL[m.local] || m.local || '')}</td><td class="estrellas">${_estrellasHtml(m.estrellas)}</td><td>${esc(m.autor || '')}</td><td>${m.estado === 'enviado' ? '✓ respondida' : m.estado === 'pendiente' ? '⏳ sin responder' : esc(m.estado)}</td></tr>`).join('') + '</table>';
+      + `<table><thead><tr><th>Fecha</th><th>Local</th><th>Estrellas</th><th>Quién</th><th>Estado</th></tr></thead><tbody>` + lista.slice(0, 15).map(m => `<tr><td>${m.fecha.slice(0, 10).split('-').reverse().join('/')}</td><td>${esc(NOM_LOCAL[m.local] || m.local || '')}</td><td class="estrellas">${_estrellasHtml(m.estrellas)}</td><td>${esc(m.autor || '')}</td><td>${m.estado === 'enviado' ? '✓ respondida' : m.estado === 'pendiente' ? '⏳ sin responder' : esc(m.estado)}</td></tr>`).join('') + '</tbody></table>';
   }
   const ultLect = G.map(m => (m.extra || {}).leido_at).filter(Boolean).sort().pop();
   h += `<div class="mini" style="margin-top:6px">${ultLect ? 'Última lectura: ' + new Date(ultLect).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' }) + ' · ' : ''}Google se lee 4 veces por día (8, 12, 16 y 20 h).</div>`;
@@ -1818,10 +1851,10 @@ function renderPosts() {
   let l = POSTS.filter(p => (!cu || p.cuenta === cu) && (!red || p.plataforma === red));
   l.sort((a, b) => ord === 'fecha' ? (b.fecha || '').localeCompare(a.fecha || '') : ord === 'alcance' ? Number(b.alcance || 0) - Number(a.alcance || 0) : inter(b) - inter(a));
   document.getElementById('p-stat').textContent = `${l.length} publicaciones`;
-  document.getElementById('p-lista').innerHTML = l.length ? `<table><tr><th></th><th>Publicación</th><th class="num">Alcance</th><th class="num">Me gusta</th><th class="num">Coment.</th><th class="num">Compart.</th><th class="num">Guard.</th><th class="num">Total</th></tr>` + l.map(p => `<tr>
+  document.getElementById('p-lista').innerHTML = l.length ? `<table><thead><tr><th>Foto</th><th>Publicación</th><th class="num">Alcance</th><th class="num">Me gusta</th><th class="num">Coment.</th><th class="num">Compart.</th><th class="num">Guard.</th><th class="num">Total</th></tr></thead><tbody>` + l.map(p => `<tr>
       <td>${p.imagen ? `<a href="${esc(p.url || '#')}" target="_blank" rel="noopener"><img src="${esc(p.imagen)}" alt="" loading="lazy" style="width:56px;height:56px;object-fit:cover;border-radius:8px;display:block"></a>` : ''}</td>
       <td><div style="font-size:11px;color:var(--muted)">${p.plataforma === 'instagram' ? 'IG' : 'FB'} · ${esc(NOM_CUENTA[p.cuenta] || p.cuenta)} · ${p.fecha ? p.fecha.slice(0, 10).split('-').reverse().join('/') : ''}${p.tipo ? ' · ' + esc(p.tipo) : ''}</div><div style="max-width:420px;white-space:normal">${esc((p.texto || '').slice(0, 110))}${(p.texto || '').length > 110 ? '…' : ''}</div></td>
-      <td class="num">${p.alcance != null ? Number(p.alcance).toLocaleString('es-AR') : '—'}</td><td class="num">${p.likes ?? '—'}</td><td class="num">${p.comentarios ?? '—'}</td><td class="num">${p.compartidos ?? '—'}</td><td class="num">${p.guardados ?? '—'}</td><td class="num"><b>${inter(p)}</b></td></tr>`).join('') + '</table>'
+      <td class="num">${p.alcance != null ? Number(p.alcance).toLocaleString('es-AR') : '—'}</td><td class="num">${p.likes ?? '—'}</td><td class="num">${p.comentarios ?? '—'}</td><td class="num">${p.compartidos ?? '—'}</td><td class="num">${p.guardados ?? '—'}</td><td class="num"><b>${inter(p)}</b></td></tr>`).join('') + '</tbody></table>'
     : '<div class="empty">Todavía no hay publicaciones cargadas.</div>';
 }
 
@@ -1979,6 +2012,7 @@ async function estadoTarea(id, estado) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { cerrarContenido(); cerrarTarea(); cerrarFrase(); } });
 
 </script>
-<script src="manual.js?v=31"></script>
+<script src="manual.js?v=33"></script>
+<script src="adorno-tablas.js?v=e33931fe"></script>
 </body>
 </html>
